@@ -31,7 +31,7 @@ export default function LoginPage() {
       return;
     }
 
-    // Resolve role to determine redirect
+    // Get user ID
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -42,32 +42,25 @@ export default function LoginPage() {
       return;
     }
 
-    // Check if staff/admin
-    const { data: staffRow } = await supabase
-      .from("staff_users")
-      .select("role")
-      .eq("auth_user_id", user.id)
-      .single();
+    // Resolve role via server-side API (bypasses RLS)
+    try {
+      const roleRes = await fetch("/api/auth/resolve-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
 
-    if (staffRow) {
-      router.push("/admin/dashboard");
-      return;
-    }
-
-    // Check if parent
-    const { data: parentRow } = await supabase
-      .from("parent_accounts")
-      .select("id")
-      .eq("auth_user_id", user.id)
-      .single();
-
-    if (parentRow) {
-      router.push("/portal");
-      return;
+      if (roleRes.ok) {
+        const { redirect } = await roleRes.json();
+        router.push(redirect || "/");
+        return;
+      }
+    } catch {
+      // Fallback if API fails
     }
 
     // Fallback
-    router.push("/");
+    router.push("/admin/dashboard");
   };
 
   return (
