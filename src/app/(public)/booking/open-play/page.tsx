@@ -3,18 +3,56 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button, Card, CardContent, Input, Stepper, Accordion } from "@/components/ui";
-import { Calendar, Clock, Users, ArrowRight, ArrowLeft, Check, CreditCard, QrCode } from "lucide-react";
+import {
+  Calendar, Clock, Users, ArrowRight, ArrowLeft, Check,
+  Loader2, QrCode, MapPin, Wallet,
+} from "lucide-react";
+import { format, addDays, startOfToday } from "date-fns";
 
-const steps = ["Session", "Date & Time", "Guests", "Your Info", "Waiver", "Review", "Confirmed"];
+const steps = ["Session", "Date & Time", "Guests", "Your Info", "Review", "Confirmed"];
 
-const timeSlots = [
-  { id: "1", time: "9:00 AM", spots: 12, price: 18 },
-  { id: "2", time: "10:30 AM", spots: 8, price: 18 },
-  { id: "3", time: "12:00 PM", spots: 15, price: 22 },
-  { id: "4", time: "1:30 PM", spots: 3, price: 22 },
-  { id: "5", time: "3:00 PM", spots: 0, price: 22 },
-  { id: "6", time: "4:30 PM", spots: 10, price: 18 },
+const sessions = [
+  {
+    id: "open_play",
+    name: "Open Play",
+    description: "90 minutes of free play for all ages",
+    priceRange: "$18–$22",
+    perLabel: "per child",
+  },
+  {
+    id: "toddler_time",
+    name: "Toddler Time",
+    description: "Ages 0–3 only, calmer environment",
+    priceRange: "$15",
+    perLabel: "per child · weekday mornings",
+    disabled: true,
+  },
 ];
+
+function generateTimeSlots() {
+  const slots = [
+    { time: "09:00", label: "9:00 AM", end: "10:30", price: 18 },
+    { time: "10:30", label: "10:30 AM", end: "12:00", price: 18 },
+    { time: "12:00", label: "12:00 PM", end: "13:30", price: 22 },
+    { time: "13:30", label: "1:30 PM", end: "15:00", price: 22 },
+    { time: "15:00", label: "3:00 PM", end: "16:30", price: 22 },
+    { time: "16:30", label: "4:30 PM", end: "18:00", price: 18 },
+  ];
+  return slots.map((s) => ({
+    ...s,
+    spots: Math.floor(Math.random() * 15) + 1,
+  }));
+}
+
+function generateCalendarDays() {
+  const today = startOfToday();
+  const days: { date: Date; available: boolean }[] = [];
+  for (let i = 0; i < 28; i++) {
+    const d = addDays(today, i);
+    days.push({ date: d, available: true });
+  }
+  return days;
+}
 
 const faqs = [
   { id: "1", question: "How long is an open play session?", answer: "Each session is 90 minutes of play time. Please arrive 10 minutes early to check in and get wristbands." },
@@ -25,8 +63,94 @@ const faqs = [
 
 export default function OpenPlayBookingPage() {
   const [currentStep, setCurrentStep] = useState(0);
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [selectedSession, setSelectedSession] = useState("open_play");
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<{
+    time: string;
+    label: string;
+    end: string;
+    price: number;
+    spots: number;
+  } | null>(null);
   const [childCount, setChildCount] = useState(1);
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [bookingResult, setBookingResult] = useState<{
+    confirmationCode: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    total: number;
+    childCount: number;
+  } | null>(null);
+  const [error, setError] = useState("");
+
+  const [timeSlots] = useState(generateTimeSlots);
+  const [calendarDays] = useState(generateCalendarDays);
+
+  const updateForm = (field: string, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmitBooking = async () => {
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: form.firstName,
+          lastName: form.lastName,
+          email: form.email,
+          phone: form.phone,
+          date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : "",
+          startTime: selectedSlot?.time || "",
+          endTime: selectedSlot?.end || "",
+          childCount,
+          adultCount: 0,
+          sessionType: selectedSession,
+          pricePerChild: selectedSlot?.price || 22,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Failed to create booking.");
+        setSubmitting(false);
+        return;
+      }
+
+      setBookingResult({
+        confirmationCode: data.booking.confirmationCode,
+        date: data.booking.date,
+        startTime: data.booking.startTime,
+        endTime: data.booking.endTime,
+        total: data.booking.total,
+        childCount: data.booking.childCount,
+      });
+      setCurrentStep(5);
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const pricePerChild = selectedSlot?.price || 22;
+  const subtotal = childCount * pricePerChild;
+  const tax = Number((subtotal * 0.08).toFixed(2));
+  const total = Number((subtotal + tax).toFixed(2));
+
+  const canContinueInfo =
+    form.firstName.trim() && form.lastName.trim() && form.email.trim();
 
   return (
     <div className="pt-24 pb-16">
@@ -46,26 +170,36 @@ export default function OpenPlayBookingPage() {
 
         {/* Step content */}
         <div className="max-w-2xl mx-auto">
+          {/* Step 0: Session type */}
           {currentStep === 0 && (
             <div className="space-y-6">
               <h2 className="font-display text-h3 text-ink">Choose your session type</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Card className="cursor-pointer border-terracotta ring-2 ring-terracotta/20">
-                  <CardContent>
-                    <h3 className="font-display text-h4 text-ink">Open Play</h3>
-                    <p className="mt-1 text-body-s text-ink-secondary">90 minutes of free play for all ages</p>
-                    <p className="mt-3 font-display text-h3 text-terracotta">$18–$22</p>
-                    <p className="text-caption text-ink-secondary">per child</p>
-                  </CardContent>
-                </Card>
-                <Card className="cursor-pointer opacity-60">
-                  <CardContent>
-                    <h3 className="font-display text-h4 text-ink">Toddler Time</h3>
-                    <p className="mt-1 text-body-s text-ink-secondary">Ages 0–3 only, calmer environment</p>
-                    <p className="mt-3 font-display text-h3 text-ink-secondary">$15</p>
-                    <p className="text-caption text-ink-secondary">per child · weekday mornings</p>
-                  </CardContent>
-                </Card>
+                {sessions.map((s) => (
+                  <button
+                    key={s.id}
+                    disabled={s.disabled}
+                    onClick={() => setSelectedSession(s.id)}
+                    className="text-left"
+                  >
+                    <Card
+                      className={`transition-all ${
+                        s.disabled
+                          ? "opacity-60 cursor-not-allowed"
+                          : selectedSession === s.id
+                          ? "border-terracotta ring-2 ring-terracotta/20 cursor-pointer"
+                          : "cursor-pointer hover:border-terracotta/50"
+                      }`}
+                    >
+                      <CardContent>
+                        <h3 className="font-display text-h4 text-ink">{s.name}</h3>
+                        <p className="mt-1 text-body-s text-ink-secondary">{s.description}</p>
+                        <p className="mt-3 font-display text-h3 text-terracotta">{s.priceRange}</p>
+                        <p className="text-caption text-ink-secondary">{s.perLabel}</p>
+                      </CardContent>
+                    </Card>
+                  </button>
+                ))}
               </div>
               <Button size="lg" className="w-full" onClick={() => setCurrentStep(1)}>
                 Continue <ArrowRight className="h-5 w-5" />
@@ -73,73 +207,96 @@ export default function OpenPlayBookingPage() {
             </div>
           )}
 
+          {/* Step 1: Date & Time */}
           {currentStep === 1 && (
             <div className="space-y-6">
               <h2 className="font-display text-h3 text-ink">Pick a date and time</h2>
-              {/* Date picker placeholder */}
+
+              {/* Date picker */}
               <div className="rounded-md border border-cream-300 bg-cream-50 p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Calendar className="h-5 w-5 text-terracotta" />
-                  <span className="font-medium text-ink">March 2026</span>
+                  <span className="font-medium text-ink">Select a date</span>
                 </div>
                 <div className="grid grid-cols-7 gap-2 text-center text-body-s">
-                  {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
-                    <div key={d} className="py-2 text-ink-secondary font-medium">{d}</div>
+                  {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                    <div key={`${d}-${i}`} className="py-2 text-ink-secondary font-medium">
+                      {d}
+                    </div>
                   ))}
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                    <button
-                      key={day}
-                      className={`py-2 rounded-sm transition-colors ${
-                        day === 15
-                          ? "bg-terracotta text-white"
-                          : day < 7
-                          ? "text-cream-300 cursor-not-allowed"
-                          : "hover:bg-cream-200 text-ink"
-                      }`}
-                    >
-                      {day}
-                    </button>
-                  ))}
+                  {calendarDays.length > 0 &&
+                    Array.from({ length: calendarDays[0].date.getDay() }).map((_, i) => (
+                      <div key={`empty-${i}`} />
+                    ))}
+                  {calendarDays.map((day) => {
+                    const isSelected =
+                      selectedDate && format(selectedDate, "yyyy-MM-dd") === format(day.date, "yyyy-MM-dd");
+                    return (
+                      <button
+                        key={format(day.date, "yyyy-MM-dd")}
+                        onClick={() => setSelectedDate(day.date)}
+                        className={`py-2 rounded-sm transition-colors ${
+                          isSelected
+                            ? "bg-terracotta text-white"
+                            : "hover:bg-cream-200 text-ink"
+                        }`}
+                      >
+                        {day.date.getDate()}
+                      </button>
+                    );
+                  })}
                 </div>
+                {selectedDate && (
+                  <p className="mt-3 text-body-s text-terracotta font-medium">
+                    Selected: {format(selectedDate, "EEEE, MMMM d, yyyy")}
+                  </p>
+                )}
               </div>
+
               {/* Time slots */}
-              <div>
-                <h3 className="text-label text-ink font-medium mb-3 flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-terracotta" /> Available times
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {timeSlots.map((slot) => (
-                    <button
-                      key={slot.id}
-                      disabled={slot.spots === 0}
-                      onClick={() => setSelectedSlot(slot.id)}
-                      className={`rounded-sm border p-3 text-center transition-all ${
-                        slot.spots === 0
-                          ? "border-cream-300 bg-cream-200 text-ink-secondary/50 cursor-not-allowed"
-                          : selectedSlot === slot.id
-                          ? "border-terracotta bg-terracotta-light ring-2 ring-terracotta/20"
-                          : "border-cream-300 bg-cream-50 hover:border-terracotta/50"
-                      }`}
-                    >
-                      <p className="font-medium text-body-m">{slot.time}</p>
-                      <p className="text-caption text-ink-secondary mt-1">
-                        {slot.spots === 0 ? "Sold out" : `${slot.spots} spots · $${slot.price}`}
-                      </p>
-                    </button>
-                  ))}
+              {selectedDate && (
+                <div>
+                  <h3 className="text-label text-ink font-medium mb-3 flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-terracotta" /> Available times
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {timeSlots.map((slot) => (
+                      <button
+                        key={slot.time}
+                        onClick={() => setSelectedSlot(slot)}
+                        className={`rounded-sm border p-3 text-center transition-all ${
+                          selectedSlot?.time === slot.time
+                            ? "border-terracotta bg-terracotta-light ring-2 ring-terracotta/20"
+                            : "border-cream-300 bg-cream-50 hover:border-terracotta/50"
+                        }`}
+                      >
+                        <p className="font-medium text-body-m">{slot.label}</p>
+                        <p className="text-caption text-ink-secondary mt-1">
+                          {slot.spots} spots &middot; ${slot.price}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
               <div className="flex gap-3">
                 <Button variant="secondary" size="lg" onClick={() => setCurrentStep(0)}>
                   <ArrowLeft className="h-5 w-5" /> Back
                 </Button>
-                <Button size="lg" className="flex-1" onClick={() => setCurrentStep(2)} disabled={!selectedSlot}>
+                <Button
+                  size="lg"
+                  className="flex-1"
+                  onClick={() => setCurrentStep(2)}
+                  disabled={!selectedDate || !selectedSlot}
+                >
                   Continue <ArrowRight className="h-5 w-5" />
                 </Button>
               </div>
             </div>
           )}
 
+          {/* Step 2: Guests */}
           {currentStep === 2 && (
             <div className="space-y-6">
               <h2 className="font-display text-h3 text-ink">Who&apos;s playing?</h2>
@@ -152,7 +309,7 @@ export default function OpenPlayBookingPage() {
                   onClick={() => setChildCount(Math.max(1, childCount - 1))}
                   className="h-12 w-12 rounded-sm border border-cream-300 flex items-center justify-center text-h4 hover:bg-cream-200"
                 >
-                  −
+                  -
                 </button>
                 <span className="font-display text-h2 text-ink w-12 text-center">{childCount}</span>
                 <button
@@ -174,98 +331,202 @@ export default function OpenPlayBookingPage() {
             </div>
           )}
 
+          {/* Step 3: Your Info */}
           {currentStep === 3 && (
             <div className="space-y-6">
               <h2 className="font-display text-h3 text-ink">Your details</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input label="First name" placeholder="Jane" />
-                <Input label="Last name" placeholder="Smith" />
+                <Input
+                  label="First name"
+                  placeholder="Jane"
+                  value={form.firstName}
+                  onChange={(e) => updateForm("firstName", e.target.value)}
+                />
+                <Input
+                  label="Last name"
+                  placeholder="Smith"
+                  value={form.lastName}
+                  onChange={(e) => updateForm("lastName", e.target.value)}
+                />
               </div>
-              <Input label="Email" type="email" placeholder="jane@example.com" />
-              <Input label="Phone" type="tel" placeholder="(555) 123-4567" />
+              <Input
+                label="Email"
+                type="email"
+                placeholder="jane@example.com"
+                value={form.email}
+                onChange={(e) => updateForm("email", e.target.value)}
+              />
+              <Input
+                label="Phone (optional)"
+                type="tel"
+                placeholder="(555) 123-4567"
+                value={form.phone}
+                onChange={(e) => updateForm("phone", e.target.value)}
+              />
               <p className="text-body-s text-ink-secondary">
-                We&apos;ll send your confirmation and QR check-in code to this email.
+                We&apos;ll send your confirmation and booking code to this email.
               </p>
               <div className="flex gap-3">
                 <Button variant="secondary" size="lg" onClick={() => setCurrentStep(2)}>
                   <ArrowLeft className="h-5 w-5" /> Back
                 </Button>
-                <Button size="lg" className="flex-1" onClick={() => setCurrentStep(5)}>
+                <Button
+                  size="lg"
+                  className="flex-1"
+                  onClick={() => setCurrentStep(4)}
+                  disabled={!canContinueInfo}
+                >
                   Continue <ArrowRight className="h-5 w-5" />
                 </Button>
               </div>
             </div>
           )}
 
-          {currentStep === 5 && (
+          {/* Step 4: Review */}
+          {currentStep === 4 && (
             <div className="space-y-6">
               <h2 className="font-display text-h3 text-ink">Review your booking</h2>
+
+              {error && (
+                <div className="px-4 py-3 rounded-md bg-error-light border border-error/30 text-body-s text-error">
+                  {error}
+                </div>
+              )}
+
               <Card>
                 <CardContent className="space-y-4">
                   <div className="flex justify-between text-body-m">
                     <span className="text-ink-secondary">Session</span>
-                    <span className="text-ink font-medium">Open Play</span>
+                    <span className="text-ink font-medium">
+                      {sessions.find((s) => s.id === selectedSession)?.name || "Open Play"}
+                    </span>
                   </div>
                   <div className="flex justify-between text-body-m">
                     <span className="text-ink-secondary">Date</span>
-                    <span className="text-ink font-medium">Saturday, March 15</span>
+                    <span className="text-ink font-medium">
+                      {selectedDate ? format(selectedDate, "EEEE, MMMM d") : ""}
+                    </span>
                   </div>
                   <div className="flex justify-between text-body-m">
                     <span className="text-ink-secondary">Time</span>
-                    <span className="text-ink font-medium">12:00 PM – 1:30 PM</span>
+                    <span className="text-ink font-medium">
+                      {selectedSlot?.label || ""}
+                    </span>
                   </div>
                   <div className="flex justify-between text-body-m">
                     <span className="text-ink-secondary">Children</span>
                     <span className="text-ink font-medium">{childCount}</span>
                   </div>
+                  <div className="flex justify-between text-body-m">
+                    <span className="text-ink-secondary">Guest</span>
+                    <span className="text-ink font-medium">{form.firstName} {form.lastName}</span>
+                  </div>
                   <hr className="border-cream-300" />
                   <div className="flex justify-between text-body-m">
-                    <span className="text-ink-secondary">Subtotal ({childCount} x $22)</span>
-                    <span className="text-ink font-medium">${(childCount * 22).toFixed(2)}</span>
+                    <span className="text-ink-secondary">
+                      Subtotal ({childCount} x ${pricePerChild})
+                    </span>
+                    <span className="text-ink font-medium">${subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-body-m">
                     <span className="text-ink-secondary">Tax</span>
-                    <span className="text-ink font-medium">${(childCount * 22 * 0.08).toFixed(2)}</span>
+                    <span className="text-ink font-medium">${tax.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-body-l font-medium">
                     <span className="text-ink">Total</span>
-                    <span className="text-terracotta">${(childCount * 22 * 1.08).toFixed(2)}</span>
+                    <span className="text-terracotta">${total.toFixed(2)}</span>
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Pay at venue notice */}
+              <div className="flex items-start gap-3 px-4 py-3 rounded-md bg-cream-100 border border-cream-300">
+                <Wallet className="h-5 w-5 text-terracotta mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-body-s font-medium text-ink">Pay at venue</p>
+                  <p className="text-body-s text-ink-secondary">
+                    No payment needed now. Pay when you arrive at WonderPlay.
+                  </p>
+                </div>
+              </div>
+
               <div className="flex gap-3">
                 <Button variant="secondary" size="lg" onClick={() => setCurrentStep(3)}>
                   <ArrowLeft className="h-5 w-5" /> Back
                 </Button>
-                <Button size="lg" className="flex-1" onClick={() => setCurrentStep(6)}>
-                  <CreditCard className="h-5 w-5" /> Pay & confirm
+                <Button
+                  size="lg"
+                  className="flex-1"
+                  onClick={handleSubmitBooking}
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Check className="h-5 w-5" />
+                  )}
+                  {submitting ? "Booking..." : "Confirm Booking"}
                 </Button>
               </div>
             </div>
           )}
 
-          {currentStep === 6 && (
+          {/* Step 5: Confirmed */}
+          {currentStep === 5 && bookingResult && (
             <div className="text-center py-8 space-y-6">
               <div className="mx-auto h-16 w-16 rounded-full bg-success-light flex items-center justify-center">
                 <Check className="h-8 w-8 text-success" />
               </div>
-              <h2 className="font-display text-h2 text-ink">You&apos;re all set for Saturday at 12:00 PM!</h2>
+              <h2 className="font-display text-h2 text-ink">
+                You&apos;re all set for{" "}
+                {selectedDate ? format(selectedDate, "EEEE") : ""} at {selectedSlot?.label}!
+              </h2>
               <p className="text-body-l text-ink-secondary max-w-md mx-auto">
-                Confirmation sent to your email. Show your QR code at check-in.
+                Show your booking code at check-in. No payment needed until you arrive.
               </p>
+
               <Card className="max-w-sm mx-auto">
-                <CardContent className="text-center">
+                <CardContent className="text-center space-y-3">
                   <div className="mx-auto h-32 w-32 rounded-md bg-cream-200 flex items-center justify-center mb-4">
                     <QrCode className="h-16 w-16 text-ink-secondary" />
                   </div>
                   <p className="text-label text-ink-secondary">Booking code</p>
-                  <p className="font-display text-h3 text-ink">PG-ABC123</p>
+                  <p className="font-display text-h3 text-ink">{bookingResult.confirmationCode}</p>
+                  <hr className="border-cream-300" />
+                  <div className="text-left space-y-2">
+                    <div className="flex justify-between text-body-s">
+                      <span className="text-ink-secondary">Date</span>
+                      <span className="text-ink font-medium">
+                        {selectedDate ? format(selectedDate, "MMM d, yyyy") : bookingResult.date}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-body-s">
+                      <span className="text-ink-secondary">Time</span>
+                      <span className="text-ink font-medium">{selectedSlot?.label}</span>
+                    </div>
+                    <div className="flex justify-between text-body-s">
+                      <span className="text-ink-secondary">Children</span>
+                      <span className="text-ink font-medium">{bookingResult.childCount}</span>
+                    </div>
+                    <div className="flex justify-between text-body-s">
+                      <span className="text-ink-secondary">Total due</span>
+                      <span className="text-terracotta font-medium">${bookingResult.total.toFixed(2)}</span>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
+
+              <div className="flex items-center justify-center gap-2 text-body-s text-ink-secondary">
+                <MapPin className="h-4 w-4" />
+                <span>WonderPlay &middot; 4521 Fun Avenue, Austin, TX 78701</span>
+              </div>
+
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button variant="secondary">Add to calendar</Button>
                 <Link href="/waivers/sign">
                   <Button>Sign waiver now</Button>
+                </Link>
+                <Link href="/">
+                  <Button variant="secondary">Back to home</Button>
                 </Link>
               </div>
             </div>
