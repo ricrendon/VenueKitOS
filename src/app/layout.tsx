@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
+import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
-  title: "Playground OS — The Best Place for Kids to Play, Celebrate, and Explore",
+  title: "VenueKit OS — The operating system for indoor playgrounds",
   description:
     "Book open play, parties, memberships, and sign waivers in minutes. A beautifully designed platform for indoor playgrounds and family entertainment venues.",
   openGraph: {
-    title: "Playground OS",
+    title: "VenueKit OS",
     description: "Book open play, parties, memberships, and waivers in minutes.",
     type: "website",
   },
@@ -19,7 +20,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className="bg-cream text-ink antialiased">{children}</body>
+      <body className="bg-cream text-ink antialiased">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

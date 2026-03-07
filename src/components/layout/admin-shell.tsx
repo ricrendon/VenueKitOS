@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard, Calendar, PartyPopper, FileCheck,
   Users, CreditCard, ClipboardCheck, ShoppingCart,
@@ -26,7 +27,14 @@ const sidebarNav = [
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/auth/login");
+  };
 
   return (
     <div className="flex h-screen bg-cream">
@@ -41,10 +49,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         <div className="flex items-center justify-between px-5 h-16 border-b border-cream-300/10">
           <Link href="/admin/dashboard" className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-sm bg-terracotta flex items-center justify-center">
-              <span className="text-white font-display font-bold text-body-s">P</span>
+              <span className="text-white font-display font-bold text-body-s">V</span>
             </div>
             <span className="font-display font-semibold text-body-m text-cream-50">
-              Playground OS
+              VenueKit OS
             </span>
           </Link>
           <button className="lg:hidden text-cream-300 hover:text-cream-50" onClick={() => setSidebarOpen(false)}>
@@ -80,7 +88,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
         {/* Sidebar footer */}
         <div className="px-3 py-4 border-t border-cream-300/10">
-          <button className="flex items-center gap-3 px-3 py-2.5 w-full rounded-sm text-body-s text-cream-300 hover:text-cream-50 hover:bg-cream-300/10 transition-colors">
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-sm text-body-s text-cream-300 hover:text-cream-50 hover:bg-cream-300/10 transition-colors"
+          >
             <LogOut className="h-5 w-5" />
             Sign out
           </button>
@@ -103,7 +114,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
             {/* Venue switcher */}
             <button className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-sm bg-cream-200 text-body-s text-ink hover:bg-cream-300 transition-colors">
-              My Playground
+              WonderPlay
               <ChevronDown className="h-4 w-4 text-ink-secondary" />
             </button>
           </div>
@@ -122,7 +133,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
             {/* Staff avatar */}
             <div className="h-8 w-8 rounded-full bg-dusty-blue flex items-center justify-center">
-              <span className="text-white text-caption font-medium">SM</span>
+              <span className="text-white text-caption font-medium">MT</span>
             </div>
           </div>
         </header>
