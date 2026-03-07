@@ -52,15 +52,16 @@ export default function LoginPage() {
 
       if (roleRes.ok) {
         const { redirect } = await roleRes.json();
-        router.push(redirect || "/");
+        // Hard redirect ensures the browser sends fresh auth cookies
+        window.location.href = redirect || "/admin/dashboard";
         return;
       }
     } catch {
       // Fallback if API fails
     }
 
-    // Fallback
-    router.push("/admin/dashboard");
+    // Fallback — hard redirect to ensure cookies are sent
+    window.location.href = "/admin/dashboard";
   };
 
   return (
