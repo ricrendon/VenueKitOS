@@ -26,10 +26,15 @@ export function Footer() {
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2 mb-4">
               <div className="h-9 w-9 rounded-sm bg-terracotta flex items-center justify-center">
-                <span className="text-white font-display font-bold text-body-m">P</span>
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <rect x="2" y="2" width="6" height="6" rx="1.5" fill="white" />
+                  <rect x="10" y="2" width="6" height="6" rx="1.5" fill="white" fillOpacity="0.6" />
+                  <rect x="2" y="10" width="6" height="6" rx="1.5" fill="white" fillOpacity="0.6" />
+                  <rect x="10" y="10" width="6" height="6" rx="1.5" fill="white" fillOpacity="0.3" />
+                </svg>
               </div>
               <span className="font-display font-semibold text-h4 text-cream-50">
-                Playground OS
+                VenueKit <span className="text-terracotta">OS</span>
               </span>
             </div>
             <p className="text-body-m text-cream-300 max-w-sm leading-relaxed">
@@ -78,7 +83,7 @@ export function Footer() {
 
         <div className="mt-12 pt-8 border-t border-cream-300/20 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-caption text-cream-300">
-            &copy; {new Date().getFullYear()} Playground OS. All rights reserved.
+            &copy; {new Date().getFullYear()} VenueKit OS. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <a href="#" className="text-cream-300 hover:text-cream-50 transition-colors" aria-label="Instagram">

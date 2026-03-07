@@ -39,10 +39,15 @@ export function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <div className="h-9 w-9 rounded-sm bg-terracotta flex items-center justify-center">
-              <span className="text-white font-display font-bold text-body-m">P</span>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <rect x="2" y="2" width="6" height="6" rx="1.5" fill="white" />
+                <rect x="10" y="2" width="6" height="6" rx="1.5" fill="white" fillOpacity="0.6" />
+                <rect x="2" y="10" width="6" height="6" rx="1.5" fill="white" fillOpacity="0.6" />
+                <rect x="10" y="10" width="6" height="6" rx="1.5" fill="white" fillOpacity="0.3" />
+              </svg>
             </div>
             <span className="font-display font-semibold text-h4 text-ink hidden sm:block">
-              Playground OS
+              VenueKit <span className="text-terracotta">OS</span>
             </span>
           </Link>
 
