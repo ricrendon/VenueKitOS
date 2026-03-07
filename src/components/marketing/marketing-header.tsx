@@ -64,8 +64,14 @@ export function MarketingHeader() {
           {/* Desktop CTA */}
           <div className="hidden lg:flex items-center gap-3">
             <Link
-              href="/admin/dashboard"
+              href="/auth/login"
               className="px-4 py-2 text-body-s font-medium text-white/70 hover:text-white transition-colors"
+            >
+              Log In
+            </Link>
+            <Link
+              href="/venue-demo"
+              className="px-4 py-2 text-body-s font-medium text-white/70 hover:text-white rounded-md border border-white/16 hover:border-white/30 transition-all"
             >
               View Demo
             </Link>
@@ -104,7 +110,14 @@ export function MarketingHeader() {
             ))}
             <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-white/8">
               <Link
-                href="/admin/dashboard"
+                href="/auth/login"
+                onClick={() => setMobileOpen(false)}
+                className="px-4 py-3 text-body-m text-white hover:bg-white/6 rounded-md transition-all"
+              >
+                Log In
+              </Link>
+              <Link
+                href="/venue-demo"
                 onClick={() => setMobileOpen(false)}
                 className="px-4 py-3 text-body-m text-white/70 hover:text-white text-center rounded-md border border-white/16 hover:border-white/30 transition-all"
               >
