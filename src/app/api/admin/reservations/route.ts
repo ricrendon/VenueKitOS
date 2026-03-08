@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getLocalToday, formatTimeInZone } from "@/lib/utils/timezone";
+import { getLocalToday, formatStoredTime } from "@/lib/utils/timezone";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     const formatted = (data || []).map((b) => {
       const parent = b.parent as { first_name: string; last_name: string; email: string } | null;
       const time = b.start_time
-        ? formatTimeInZone(b.start_time, VENUE_TZ)
+        ? formatStoredTime(b.start_time)
         : "";
 
       return {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getLocalToday, formatTimeInZone } from "@/lib/utils/timezone";
+import { getLocalToday, formatStoredTime } from "@/lib/utils/timezone";
 
 export const dynamic = "force-dynamic";
 
@@ -138,14 +138,12 @@ export async function GET() {
     const formattedBookings = todayBookings.map((b) => {
       const parent = b.parent as { first_name: string; last_name: string } | null;
       const time = b.start_time
-        ? formatTimeInZone(b.start_time, VENUE_TZ)
+        ? formatStoredTime(b.start_time)
         : "";
       return {
         id: b.id,
         name: parent ? `${parent.first_name} ${parent.last_name}` : "Unknown",
         time,
-        _debug_raw_start_time: b.start_time,
-        _debug_tz: VENUE_TZ,
         children: b.child_count || 0,
         type: b.type === "party" ? "Party" : "Open Play",
         status: b.status,
@@ -160,7 +158,7 @@ export async function GET() {
       const parent = p.parent as { first_name: string; last_name: string } | null;
       const pkg = p.package as { name: string } | null;
       const time = p.start_time
-        ? formatTimeInZone(p.start_time, VENUE_TZ)
+        ? formatStoredTime(p.start_time)
         : "";
       return {
         id: p.id,

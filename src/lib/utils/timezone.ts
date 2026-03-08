@@ -5,6 +5,12 @@
  * America/Chicago, calling `new Date().toISOString().split("T")[0]`
  * after midnight UTC gives the NEXT day — mismatching the bookings
  * table which stores venue-local dates. These helpers solve that.
+ *
+ * NOTE: Booking timestamps are stored as local venue time with a
+ * UTC offset (+00:00). For example, a 10:00 AM booking is stored as
+ * 2026-03-07T10:00:00+00:00. This means times should NOT be
+ * timezone-converted when displaying — only "today" calculations
+ * need the real timezone.
  */
 
 const DEFAULT_TIMEZONE = "America/Chicago";
@@ -20,15 +26,13 @@ export function getLocalToday(timezone: string = DEFAULT_TIMEZONE): string {
 }
 
 /**
- * Formats a timestamp string to a human-readable time (e.g., "10:00 AM")
- * in the given timezone.
+ * Formats a stored timestamp to human-readable time (e.g., "10:00 AM").
+ * Since our bookings store local venue time with a +00:00 offset,
+ * we format in UTC to display the intended local time as-is.
  */
-export function formatTimeInZone(
-  isoString: string,
-  timezone: string = DEFAULT_TIMEZONE
-): string {
+export function formatStoredTime(isoString: string): string {
   return new Date(isoString).toLocaleTimeString("en-US", {
-    timeZone: timezone,
+    timeZone: "UTC",
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
