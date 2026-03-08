@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getLocalToday } from "@/lib/utils/timezone";
 import {
   getInstagramProfile,
   getInstagramInsights,
@@ -10,6 +11,7 @@ import {
 export const dynamic = "force-dynamic";
 
 const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
+const VENUE_TZ = "America/Chicago";
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     const results = [];
-    const today = new Date().toISOString().split("T")[0];
+    const today = getLocalToday(VENUE_TZ);
 
     for (const account of accounts) {
       if (!account.access_token) continue;

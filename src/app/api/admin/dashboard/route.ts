@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getLocalToday, formatTimeInZone } from "@/lib/utils/timezone";
 
 export const dynamic = "force-dynamic";
 
 const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
+const VENUE_TZ = "America/Chicago";
 
 export async function GET() {
   try {
     const supabase = createAdminClient();
-    const today = new Date().toISOString().split("T")[0];
+    const today = getLocalToday(VENUE_TZ);
 
     // Run all queries in parallel
     const [
@@ -136,11 +138,7 @@ export async function GET() {
     const formattedBookings = todayBookings.map((b) => {
       const parent = b.parent as { first_name: string; last_name: string } | null;
       const time = b.start_time
-        ? new Date(b.start_time).toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-          })
+        ? formatTimeInZone(b.start_time, VENUE_TZ)
         : "";
       return {
         id: b.id,
@@ -160,11 +158,7 @@ export async function GET() {
       const parent = p.parent as { first_name: string; last_name: string } | null;
       const pkg = p.package as { name: string } | null;
       const time = p.start_time
-        ? new Date(p.start_time).toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-          })
+        ? formatTimeInZone(p.start_time, VENUE_TZ)
         : "";
       return {
         id: p.id,

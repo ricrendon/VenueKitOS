@@ -82,7 +82,8 @@ export default function PartiesPage() {
     );
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  // Use en-CA locale to get YYYY-MM-DD in venue timezone
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago" }).format(new Date());
   const todayParties = parties.filter((p) => p.date === today);
   const upcomingParties = parties.filter((p) => p.date > today);
   const totalRevenue = parties.reduce((sum, p) => sum + p.totalDue, 0);

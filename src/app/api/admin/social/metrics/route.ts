@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getLocalToday } from "@/lib/utils/timezone";
 
 export const dynamic = "force-dynamic";
 
 const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
+const VENUE_TZ = "America/Chicago";
 
 export async function GET() {
   try {
@@ -26,7 +28,8 @@ export async function GET() {
     }
 
     // Get last 7 days of metrics
-    const sevenDaysAgo = new Date();
+    const todayStr = getLocalToday(VENUE_TZ);
+    const sevenDaysAgo = new Date(todayStr + "T00:00:00");
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const dateStr = sevenDaysAgo.toISOString().split("T")[0];
 

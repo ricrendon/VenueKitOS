@@ -1,9 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getLocalToday, formatTimeInZone } from "@/lib/utils/timezone";
 
 export const dynamic = "force-dynamic";
 
 const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
+const VENUE_TZ = "America/Chicago";
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,7 +20,7 @@ export async function GET(request: NextRequest) {
       .order("date", { ascending: true })
       .order("start_time", { ascending: true });
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = getLocalToday(VENUE_TZ);
     if (filter === "today") {
       query = query.eq("date", today);
     } else if (filter === "upcoming") {
@@ -35,11 +37,7 @@ export async function GET(request: NextRequest) {
     const formatted = (data || []).map((b) => {
       const parent = b.parent as { first_name: string; last_name: string; email: string } | null;
       const time = b.start_time
-        ? new Date(b.start_time).toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-          })
+        ? formatTimeInZone(b.start_time, VENUE_TZ)
         : "";
 
       return {
