@@ -11,7 +11,7 @@ const footerLinks = {
   Operators: [
     { label: "Request a Demo", href: "/get-demo" },
     { label: "View Demo Dashboard", href: "/admin/dashboard" },
-    { label: "View Client Site", href: "/venue-demo" },
+    { label: "Product Tour", href: "/venue-demo" },
     { label: "Hardware Leasing", href: "/hardware" },
     { label: "Setup Guide", href: "/#how-it-works" },
   ],
