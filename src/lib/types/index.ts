@@ -394,3 +394,27 @@ export interface DashboardKPIs {
   partiesToday: number;
   activeMemberships: number;
 }
+
+// Time Clock
+export type TimeEntryStatus = "active" | "completed";
+
+export interface TimeEntry {
+  id: string;
+  venueId: string;
+  staffId: string;
+  staffName: string;
+  staffRole: string;
+  clockIn: string;
+  clockOut: string | null;
+  breakMinutes: number;
+  notes: string | null;
+  status: TimeEntryStatus;
+  hoursWorked: number | null;
+}
+
+export interface TimeClockKPIs {
+  staffOnClock: number;
+  hoursToday: number;
+  totalStaff: number;
+  weeklyHours: number;
+}

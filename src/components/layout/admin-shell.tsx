@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard, Calendar, PartyPopper, FileCheck,
-  Users, CreditCard, ClipboardCheck, ShoppingCart,
+  Users, CreditCard, ClipboardCheck, Timer, ShoppingCart,
   Package, Gift, BarChart3, Settings, Search, Bell, ChevronDown,
   Menu, X, LogOut,
 } from "lucide-react";
@@ -20,6 +20,7 @@ const sidebarNav = [
   { href: "/admin/families", label: "Families", icon: Users },
   { href: "/admin/memberships", label: "Memberships", icon: CreditCard },
   { href: "/admin/check-in", label: "Check-In", icon: ClipboardCheck },
+  { href: "/admin/time-clock", label: "Time Clock", icon: Timer },
   { href: "/admin/pos", label: "POS", icon: ShoppingCart },
   { href: "/admin/inventory", label: "Inventory", icon: Package },
   { href: "/admin/gift-cards", label: "Gift Cards", icon: Gift },
