@@ -1,8 +1,17 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { Button, Card, CardContent, Badge, Input } from "@/components/ui";
-import { ClipboardCheck, Search, Loader2, CheckCircle2, Users } from "lucide-react";
+import { ClipboardCheck, Search, Loader2, CheckCircle2, Users, QrCode, X } from "lucide-react";
+
+const QrScannerModal = dynamic(
+  () =>
+    import("@/components/admin/check-in/qr-scanner-modal").then(
+      (m) => m.QrScannerModal
+    ),
+  { ssr: false }
+);
 
 interface BookingRow {
   id: string;
@@ -30,6 +39,8 @@ export default function CheckInPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanResult, setScanResult] = useState<string | null>(null);
 
   const fetchData = useCallback((searchTerm?: string) => {
     const params = new URLSearchParams();
@@ -51,6 +62,7 @@ export default function CheckInPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setScanResult(null);
     fetchData(search);
   };
 
@@ -64,7 +76,7 @@ export default function CheckInPage() {
       });
 
       if (res.ok) {
-        // Refresh data
+        setScanResult(null);
         fetchData(search || undefined);
       }
     } catch (err) {
@@ -72,6 +84,19 @@ export default function CheckInPage() {
     } finally {
       setCheckingIn(null);
     }
+  };
+
+  const handleScan = (code: string) => {
+    setScannerOpen(false);
+    setScanResult(code);
+    setSearch(code);
+    fetchData(code);
+  };
+
+  const clearScanResult = () => {
+    setScanResult(null);
+    setSearch("");
+    fetchData();
   };
 
   const capacityPct = capacity.max > 0 ? (capacity.current / capacity.max) * 100 : 0;
@@ -84,6 +109,10 @@ export default function CheckInPage() {
     );
   }
 
+  const scanMatch = scanResult
+    ? bookings.find((b) => b.confirmationCode === scanResult)
+    : null;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -92,6 +121,9 @@ export default function CheckInPage() {
           <h1 className="font-display text-h1 text-ink">Check-In</h1>
           <p className="text-body-m text-ink-secondary">Today&apos;s arrivals</p>
         </div>
+        <Button onClick={() => setScannerOpen(true)}>
+          <QrCode className="h-4 w-4" /> Scan QR
+        </Button>
       </div>
 
       {/* Capacity bar */}
@@ -116,6 +148,41 @@ export default function CheckInPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Scan result banner */}
+      {scanResult && (
+        <div
+          className={`flex items-center justify-between px-4 py-3 rounded-sm border ${
+            scanMatch
+              ? "bg-sage/10 border-sage/30"
+              : "bg-error/10 border-error/30"
+          }`}
+        >
+          <div className="flex items-center gap-2 text-body-s">
+            {scanMatch ? (
+              <>
+                <CheckCircle2 className="h-4 w-4 text-success" />
+                <span className="text-ink">
+                  Scanned: <span className="font-mono font-medium">{scanResult}</span> — {scanMatch.parentName}
+                </span>
+              </>
+            ) : (
+              <>
+                <QrCode className="h-4 w-4 text-error" />
+                <span className="text-ink">
+                  Scanned: <span className="font-mono font-medium">{scanResult}</span> — No match found for today
+                </span>
+              </>
+            )}
+          </div>
+          <button
+            onClick={clearScanResult}
+            className="text-ink-secondary hover:text-ink transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Search */}
       <form onSubmit={handleSearch} className="flex gap-3">
@@ -148,48 +215,57 @@ export default function CheckInPage() {
                 </tr>
               </thead>
               <tbody>
-                {bookings.map((b) => (
-                  <tr key={b.id} className="border-b border-cream-200 hover:bg-cream-200/50 transition-colors">
-                    <td className="py-3 text-body-s text-ink font-medium">{b.time}</td>
-                    <td className="py-3">
-                      <div className="text-body-s text-ink">{b.parentName}</div>
-                      <div className="text-caption text-ink-secondary">{b.parentPhone}</div>
-                    </td>
-                    <td className="py-3">
-                      <span className="font-mono text-body-s text-terracotta font-medium">{b.confirmationCode}</span>
-                    </td>
-                    <td className="py-3 text-body-s text-ink">{b.childCount}</td>
-                    <td className="py-3 text-body-s text-ink-secondary">{b.type}</td>
-                    <td className="py-3">
-                      {b.checkedIn ? (
-                        <span className="flex items-center gap-1 text-body-s text-success font-medium">
-                          <CheckCircle2 className="h-4 w-4" /> Checked in
-                        </span>
-                      ) : (
-                        <Badge variant={b.status === "confirmed" ? "success" : "warning"} className="text-[11px]">
-                          {b.status}
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="py-3 text-right">
-                      {!b.checkedIn && b.status === "confirmed" && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleCheckIn(b.id)}
-                          disabled={checkingIn === b.id}
-                        >
-                          {checkingIn === b.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <>
-                              <ClipboardCheck className="h-4 w-4" /> Check in
-                            </>
-                          )}
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {bookings.map((b) => {
+                  const isScanned =
+                    scanResult && b.confirmationCode === scanResult && !b.checkedIn;
+                  return (
+                    <tr
+                      key={b.id}
+                      className={`border-b border-cream-200 hover:bg-cream-200/50 transition-colors ${
+                        isScanned ? "ring-2 ring-terracotta/30 bg-terracotta/5" : ""
+                      }`}
+                    >
+                      <td className="py-3 text-body-s text-ink font-medium">{b.time}</td>
+                      <td className="py-3">
+                        <div className="text-body-s text-ink">{b.parentName}</div>
+                        <div className="text-caption text-ink-secondary">{b.parentPhone}</div>
+                      </td>
+                      <td className="py-3">
+                        <span className="font-mono text-body-s text-terracotta font-medium">{b.confirmationCode}</span>
+                      </td>
+                      <td className="py-3 text-body-s text-ink">{b.childCount}</td>
+                      <td className="py-3 text-body-s text-ink-secondary">{b.type}</td>
+                      <td className="py-3">
+                        {b.checkedIn ? (
+                          <span className="flex items-center gap-1 text-body-s text-success font-medium">
+                            <CheckCircle2 className="h-4 w-4" /> Checked in
+                          </span>
+                        ) : (
+                          <Badge variant={b.status === "confirmed" ? "success" : "warning"} className="text-[11px]">
+                            {b.status}
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="py-3 text-right">
+                        {!b.checkedIn && b.status === "confirmed" && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleCheckIn(b.id)}
+                            disabled={checkingIn === b.id}
+                          >
+                            {checkingIn === b.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <ClipboardCheck className="h-4 w-4" /> Check in
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -204,6 +280,13 @@ export default function CheckInPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* QR Scanner Modal */}
+      <QrScannerModal
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onScan={handleScan}
+      />
     </div>
   );
 }

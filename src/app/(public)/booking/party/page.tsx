@@ -317,6 +317,9 @@ export default function PartyBookingPage() {
                   </ul>
                 </CardContent>
               </Card>
+              <p className="text-body-s text-ink-secondary">
+                Your booking confirmation and ticket will be available after your reservation is confirmed.
+              </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button variant="secondary">Share waiver link with guests</Button>
                 <Link href="/"><Button>Back to home</Button></Link>

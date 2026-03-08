@@ -5,8 +5,9 @@ import Link from "next/link";
 import { Button, Card, CardContent, Input, Stepper, Accordion } from "@/components/ui";
 import {
   Calendar, Clock, Users, ArrowRight, ArrowLeft, Check,
-  Loader2, QrCode, MapPin, Wallet,
+  Loader2, MapPin, Wallet,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { format, addDays, startOfToday } from "date-fns";
 import { useVenue } from "@/components/providers/venue-provider";
 
@@ -507,11 +508,20 @@ export default function OpenPlayBookingPage() {
 
               <Card className="max-w-sm mx-auto">
                 <CardContent className="text-center space-y-3">
-                  <div className="mx-auto h-32 w-32 rounded-md bg-cream-200 flex items-center justify-center mb-4">
-                    <QrCode className="h-16 w-16 text-ink-secondary" />
+                  <div className="mx-auto mb-4 flex justify-center">
+                    <QRCodeSVG
+                      value={bookingResult.confirmationCode}
+                      size={128}
+                      level="M"
+                      fgColor="#1F1D1A"
+                      bgColor="#F7F3EE"
+                    />
                   </div>
                   <p className="text-label text-ink-secondary">Booking code</p>
                   <p className="font-display text-h3 text-ink">{bookingResult.confirmationCode}</p>
+                  <Link href={`/ticket/${bookingResult.confirmationCode}`}>
+                    <Button variant="link" size="sm">View Full Ticket →</Button>
+                  </Link>
                   <hr className="border-cream-300" />
                   <div className="text-left space-y-2">
                     <div className="flex justify-between text-body-s">

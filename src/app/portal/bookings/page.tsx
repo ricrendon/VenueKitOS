@@ -148,6 +148,14 @@ export default function PortalBookingsPage() {
                   <div className="text-right">
                     <p className="font-display text-h4 text-terracotta">${booking.total?.toFixed(2)}</p>
                     <p className="text-caption text-ink-secondary font-mono">{booking.confirmation_code}</p>
+                    {!isPast && booking.status === "confirmed" && (
+                      <Link
+                        href={`/ticket/${booking.confirmation_code}`}
+                        className="text-terracotta hover:underline text-caption font-medium"
+                      >
+                        View Ticket →
+                      </Link>
+                    )}
                   </div>
                 </CardContent>
               </Card>
