@@ -327,6 +327,41 @@ export interface OrderItem {
   total: number;
 }
 
+// Gift Cards
+export type GiftCardStatus = "active" | "redeemed" | "expired" | "disabled";
+export type GiftCardTransactionType = "purchase" | "redemption" | "adjustment" | "refund";
+
+export interface GiftCard {
+  id: string;
+  venueId: string;
+  code: string;
+  initialValue: number;
+  currentBalance: number;
+  status: GiftCardStatus;
+  purchaserName?: string;
+  purchaserEmail?: string;
+  recipientName?: string;
+  recipientEmail?: string;
+  message?: string;
+  paymentMethod: string;
+  purchasedAt: string;
+  expiresAt?: string;
+  createdAt: string;
+}
+
+export interface GiftCardTransaction {
+  id: string;
+  giftCardId: string;
+  type: GiftCardTransactionType;
+  amount: number;
+  balanceAfter: number;
+  referenceType?: "booking" | "order" | "manual";
+  referenceId?: string;
+  notes?: string;
+  createdBy?: string;
+  createdAt: string;
+}
+
 // Dashboard KPIs
 export interface DashboardKPIs {
   guestsToday: number;

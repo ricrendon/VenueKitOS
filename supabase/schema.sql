@@ -309,6 +309,51 @@ CREATE POLICY "Parents see own memberships" ON memberships FOR ALL USING (parent
 -- Note: Extend these policies based on your specific role requirements
 
 -- ===================================
+-- GIFT CARDS
+-- ===================================
+CREATE TABLE gift_cards (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  venue_id UUID REFERENCES venues(id) ON DELETE CASCADE,
+  code TEXT UNIQUE NOT NULL,
+  initial_value DECIMAL(10,2) NOT NULL,
+  current_balance DECIMAL(10,2) NOT NULL,
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'redeemed', 'expired', 'disabled')),
+  purchaser_name TEXT,
+  purchaser_email TEXT,
+  recipient_name TEXT,
+  recipient_email TEXT,
+  message TEXT,
+  payment_method TEXT DEFAULT 'in_store',
+  stripe_payment_intent_id TEXT,
+  purchased_at TIMESTAMPTZ DEFAULT NOW(),
+  expires_at TIMESTAMPTZ,
+  created_by UUID REFERENCES staff_users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE gift_card_transactions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  gift_card_id UUID REFERENCES gift_cards(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK (type IN ('purchase', 'redemption', 'adjustment', 'refund')),
+  amount DECIMAL(10,2) NOT NULL,
+  balance_after DECIMAL(10,2) NOT NULL,
+  reference_type TEXT CHECK (reference_type IN ('booking', 'order', 'manual')),
+  reference_id UUID,
+  notes TEXT,
+  created_by UUID REFERENCES staff_users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE gift_cards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE gift_card_transactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public can view gift cards" ON gift_cards FOR SELECT USING (true);
+CREATE POLICY "Service role full access gift cards" ON gift_cards FOR ALL USING (true);
+CREATE POLICY "Public can view gift card transactions" ON gift_card_transactions FOR SELECT USING (true);
+CREATE POLICY "Service role full access gift card transactions" ON gift_card_transactions FOR ALL USING (true);
+
+-- ===================================
 -- INDEXES
 -- ===================================
 CREATE INDEX idx_bookings_date ON bookings(date);
@@ -324,3 +369,7 @@ CREATE INDEX idx_memberships_parent ON memberships(parent_id);
 CREATE INDEX idx_memberships_status ON memberships(status);
 CREATE INDEX idx_check_ins_booking ON check_ins(booking_id);
 CREATE INDEX idx_orders_venue ON orders(venue_id);
+CREATE INDEX idx_gift_cards_venue ON gift_cards(venue_id);
+CREATE INDEX idx_gift_cards_code ON gift_cards(code);
+CREATE INDEX idx_gift_cards_status ON gift_cards(status);
+CREATE INDEX idx_gift_card_transactions_card ON gift_card_transactions(gift_card_id);

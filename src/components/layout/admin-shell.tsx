@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard, Calendar, PartyPopper, FileCheck,
   Users, CreditCard, ClipboardCheck, ShoppingCart,
-  BarChart3, Settings, Search, Bell, ChevronDown,
+  Gift, BarChart3, Settings, Search, Bell, ChevronDown,
   Menu, X, LogOut,
 } from "lucide-react";
 
@@ -21,6 +21,7 @@ const sidebarNav = [
   { href: "/admin/memberships", label: "Memberships", icon: CreditCard },
   { href: "/admin/check-in", label: "Check-In", icon: ClipboardCheck },
   { href: "/admin/pos", label: "POS", icon: ShoppingCart },
+  { href: "/admin/gift-cards", label: "Gift Cards", icon: Gift },
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];

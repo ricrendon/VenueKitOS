@@ -11,6 +11,7 @@ const navLinks = [
   { href: "/booking/open-play", label: "Play" },
   { href: "/booking/party", label: "Parties" },
   { href: "/memberships", label: "Memberships" },
+  { href: "/gift-cards", label: "Gift Cards" },
   { href: "/waivers", label: "Waivers" },
   { href: "/contact", label: "Contact" },
 ];
