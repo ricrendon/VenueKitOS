@@ -144,6 +144,8 @@ export async function GET() {
         id: b.id,
         name: parent ? `${parent.first_name} ${parent.last_name}` : "Unknown",
         time,
+        _debug_raw_start_time: b.start_time,
+        _debug_tz: VENUE_TZ,
         children: b.child_count || 0,
         type: b.type === "party" ? "Party" : "Open Play",
         status: b.status,
