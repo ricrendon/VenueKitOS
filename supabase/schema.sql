@@ -246,6 +246,29 @@ CREATE TABLE products (
   price DECIMAL(10,2) NOT NULL,
   image_url TEXT,
   active BOOLEAN DEFAULT true,
+  sku TEXT,
+  description TEXT,
+  cost DECIMAL(10,2),
+  quantity_on_hand INTEGER DEFAULT 0,
+  reorder_level INTEGER DEFAULT 0,
+  unit TEXT DEFAULT 'each',
+  supplier TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX idx_products_venue_sku ON products(venue_id, sku) WHERE sku IS NOT NULL;
+
+CREATE TABLE stock_transactions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  product_id UUID REFERENCES products(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK (type IN ('received', 'sold', 'adjustment', 'return', 'damaged', 'initial')),
+  quantity_change INTEGER NOT NULL,
+  quantity_after INTEGER NOT NULL,
+  reference_type TEXT CHECK (reference_type IN ('order', 'manual', 'pos')),
+  reference_id UUID,
+  notes TEXT,
+  created_by UUID REFERENCES staff_users(id),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

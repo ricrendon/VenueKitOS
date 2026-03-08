@@ -294,7 +294,10 @@ export interface CheckIn {
   wristbandsPrinted: boolean;
 }
 
-// POS
+// POS & Inventory
+export type ProductCategory = 'Socks' | 'Food & Beverage' | 'Merchandise' | 'Party Supplies' | 'Operational';
+export type StockTransactionType = 'received' | 'sold' | 'adjustment' | 'return' | 'damaged' | 'initial';
+
 export interface Product {
   id: string;
   venueId: string;
@@ -303,6 +306,28 @@ export interface Product {
   price: number;
   imageUrl?: string;
   active: boolean;
+  sku?: string;
+  description?: string;
+  cost?: number;
+  quantityOnHand: number;
+  reorderLevel: number;
+  unit: string;
+  supplier?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StockTransaction {
+  id: string;
+  productId: string;
+  type: StockTransactionType;
+  quantityChange: number;
+  quantityAfter: number;
+  referenceType?: 'order' | 'manual' | 'pos';
+  referenceId?: string;
+  notes?: string;
+  createdBy?: string;
+  createdAt: string;
 }
 
 export interface Order {
