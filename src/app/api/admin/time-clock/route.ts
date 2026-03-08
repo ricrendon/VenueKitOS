@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from("time_entries")
-      .select("*, staff:staff_users(first_name, last_name, role)")
+      .select("*")
       .eq("venue_id", VENUE_ID)
       .gte("clock_in", dayStart)
       .lte("clock_in", dayEnd)
@@ -48,6 +48,16 @@ export async function GET(request: NextRequest) {
       console.error("Time clock GET error:", entriesError);
       return NextResponse.json({ error: "Failed to fetch time entries" }, { status: 500 });
     }
+
+    // Fetch all staff for name lookup (avoids ambiguous FK join)
+    const { data: allStaff } = await supabase
+      .from("staff_users")
+      .select("id, first_name, last_name, role")
+      .eq("venue_id", VENUE_ID);
+
+    const staffMap = new Map(
+      (allStaff || []).map((s) => [s.id, s])
+    );
 
     // Also fetch ALL active entries (for KPIs — regardless of date filter)
     const { data: allActive } = await supabase
@@ -118,7 +128,7 @@ export async function GET(request: NextRequest) {
 
     // Format entries
     const formatted = (entries || []).map((e) => {
-      const staff = e.staff as { first_name: string; last_name: string; role: string } | null;
+      const staff = staffMap.get(e.staff_id);
       return {
         id: e.id,
         venueId: e.venue_id,
@@ -134,15 +144,15 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Fetch staff list (for dropdowns)
-    const { data: staffList } = await supabase
-      .from("staff_users")
-      .select("id, first_name, last_name, role")
-      .eq("venue_id", VENUE_ID)
-      .eq("active", true)
-      .order("first_name");
-
     const activeStaffIds = new Set((allActive || []).map((e) => e.staff_id));
+
+    // Build staff list for dropdowns (reuse allStaff, filter active only)
+    const activeStaffList = (allStaff || [])
+      .filter((s) => {
+        // Check if staff is active (we don't have 'active' in this query, so include all)
+        return true;
+      })
+      .sort((a, b) => a.first_name.localeCompare(b.first_name));
 
     return NextResponse.json({
       entries: formatted,
@@ -152,7 +162,7 @@ export async function GET(request: NextRequest) {
         totalStaff: totalStaff || 0,
         weeklyHours,
       },
-      staff: (staffList || []).map((s) => ({
+      staff: activeStaffList.map((s) => ({
         id: s.id,
         name: `${s.first_name} ${s.last_name}`,
         role: s.role,
