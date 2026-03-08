@@ -2,8 +2,58 @@
 
 import { Button, Card, CardContent, Input } from "@/components/ui";
 import { MapPin, Phone, Mail, Clock, Send } from "lucide-react";
+import { useVenue } from "@/components/providers/venue-provider";
+
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function formatTime(t: string) {
+  const [h, m] = t.split(":").map(Number);
+  const ampm = h >= 12 ? "pm" : "am";
+  const hr = h % 12 || 12;
+  return m === 0 ? `${hr}${ampm}` : `${hr}:${m.toString().padStart(2, "0")}${ampm}`;
+}
+
+function formatOperatingHours(hours: { dayOfWeek: number; openTime: string; closeTime: string; isClosed: boolean }[]) {
+  if (!hours || hours.length === 0) return "Mon\u2013Fri: 9am\u20136pm\nSat\u2013Sun: 9am\u20137pm";
+
+  const sorted = [...hours].sort((a, b) => a.dayOfWeek - b.dayOfWeek);
+
+  // Group consecutive days with same hours
+  const lines: string[] = [];
+  let i = 0;
+  while (i < sorted.length) {
+    const current = sorted[i];
+    if (current.isClosed) {
+      lines.push(`${DAY_NAMES[current.dayOfWeek]}: Closed`);
+      i++;
+      continue;
+    }
+    let j = i + 1;
+    while (
+      j < sorted.length &&
+      !sorted[j].isClosed &&
+      sorted[j].openTime === current.openTime &&
+      sorted[j].closeTime === current.closeTime
+    ) {
+      j++;
+    }
+    const startDay = DAY_NAMES[current.dayOfWeek];
+    const endDay = DAY_NAMES[sorted[j - 1].dayOfWeek];
+    const timeStr = `${formatTime(current.openTime)}\u2013${formatTime(current.closeTime)}`;
+    lines.push(j - i > 1 ? `${startDay}\u2013${endDay}: ${timeStr}` : `${startDay}: ${timeStr}`);
+    i = j;
+  }
+  return lines.join("\n");
+}
 
 export default function ContactPage() {
+  const { venue } = useVenue();
+
+  const address = venue ? `${venue.address || ""}` : "123 Play Street";
+  const cityLine = venue ? `${venue.city || "City"}, ${venue.state || "ST"} ${venue.zip || "12345"}` : "City, ST 12345";
+  const phone = venue?.phone || "(555) 123-4567";
+  const email = venue?.email || "hello@yourplayground.com";
+  const hoursText = formatOperatingHours(venue?.operating_hours || []);
   return (
     <div className="pt-24 pb-16">
       <div className="container-content">
@@ -64,7 +114,7 @@ export default function ContactPage() {
                   <MapPin className="h-5 w-5 text-terracotta shrink-0 mt-0.5" />
                   <div>
                     <p className="text-label font-medium text-ink">Address</p>
-                    <p className="text-body-s text-ink-secondary">123 Play Street<br />City, ST 12345</p>
+                    <p className="text-body-s text-ink-secondary">{address}<br />{cityLine}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -73,7 +123,7 @@ export default function ContactPage() {
                   <Phone className="h-5 w-5 text-terracotta shrink-0 mt-0.5" />
                   <div>
                     <p className="text-label font-medium text-ink">Phone</p>
-                    <p className="text-body-s text-ink-secondary">(555) 123-4567</p>
+                    <p className="text-body-s text-ink-secondary">{phone}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -82,7 +132,7 @@ export default function ContactPage() {
                   <Mail className="h-5 w-5 text-terracotta shrink-0 mt-0.5" />
                   <div>
                     <p className="text-label font-medium text-ink">Email</p>
-                    <p className="text-body-s text-ink-secondary">hello@yourplayground.com</p>
+                    <p className="text-body-s text-ink-secondary">{email}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -91,7 +141,7 @@ export default function ContactPage() {
                   <Clock className="h-5 w-5 text-terracotta shrink-0 mt-0.5" />
                   <div>
                     <p className="text-label font-medium text-ink">Hours</p>
-                    <p className="text-body-s text-ink-secondary">Mon–Fri: 9am–6pm<br />Sat–Sun: 9am–7pm</p>
+                    <p className="text-body-s text-ink-secondary whitespace-pre-line">{hoursText}</p>
                   </div>
                 </CardContent>
               </Card>

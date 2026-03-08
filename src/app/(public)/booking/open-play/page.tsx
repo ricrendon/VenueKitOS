@@ -8,10 +8,11 @@ import {
   Loader2, QrCode, MapPin, Wallet,
 } from "lucide-react";
 import { format, addDays, startOfToday } from "date-fns";
+import { useVenue } from "@/components/providers/venue-provider";
 
 const steps = ["Session", "Date & Time", "Guests", "Your Info", "Review", "Confirmed"];
 
-const sessions = [
+const defaultSessions = [
   {
     id: "open_play",
     name: "Open Play",
@@ -29,17 +30,22 @@ const sessions = [
   },
 ];
 
-function generateTimeSlots() {
-  const slots = [
-    { time: "09:00", label: "9:00 AM", end: "10:30", price: 18 },
-    { time: "10:30", label: "10:30 AM", end: "12:00", price: 18 },
-    { time: "12:00", label: "12:00 PM", end: "13:30", price: 22 },
-    { time: "13:30", label: "1:30 PM", end: "15:00", price: 22 },
-    { time: "15:00", label: "3:00 PM", end: "16:30", price: 22 },
-    { time: "16:30", label: "4:30 PM", end: "18:00", price: 18 },
-  ];
+const defaultTimeSlotDefs = [
+  { time: "09:00", label: "9:00 AM", endTime: "10:30", price: 18 },
+  { time: "10:30", label: "10:30 AM", endTime: "12:00", price: 18 },
+  { time: "12:00", label: "12:00 PM", endTime: "13:30", price: 22 },
+  { time: "13:30", label: "1:30 PM", endTime: "15:00", price: 22 },
+  { time: "15:00", label: "3:00 PM", endTime: "16:30", price: 22 },
+  { time: "16:30", label: "4:30 PM", endTime: "18:00", price: 18 },
+];
+
+function generateTimeSlots(slotDefs?: { time: string; label: string; endTime: string; price: number }[]) {
+  const slots = slotDefs?.length ? slotDefs : defaultTimeSlotDefs;
   return slots.map((s) => ({
-    ...s,
+    time: s.time,
+    label: s.label,
+    end: s.endTime,
+    price: s.price,
     spots: Math.floor(Math.random() * 15) + 1,
   }));
 }
@@ -62,6 +68,20 @@ const faqs = [
 ];
 
 export default function OpenPlayBookingPage() {
+  const { venue } = useVenue();
+  const wc = venue?.website_content as Record<string, unknown> | undefined;
+  const venueSettings = venue?.settings as Record<string, unknown> | undefined;
+  const taxRate = typeof venueSettings?.taxRate === "number" ? venueSettings.taxRate : 0.08;
+  const venueName = venue?.name || "WonderPlay";
+  const venueAddress = venue ? `${venue.address || "4521 Fun Avenue"}, ${venue.city || "Austin"}, ${venue.state || "TX"} ${venue.zip || "78701"}` : "4521 Fun Avenue, Austin, TX 78701";
+
+  // Dynamic sessions from website_content
+  const dbSessions = wc?.openPlaySessions as typeof defaultSessions | undefined;
+  const sessions = dbSessions?.length ? dbSessions : defaultSessions;
+
+  // Dynamic time slots from website_content
+  const dbTimeSlots = wc?.openPlayTimeSlots as typeof defaultTimeSlotDefs | undefined;
+
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedSession, setSelectedSession] = useState("open_play");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -90,7 +110,7 @@ export default function OpenPlayBookingPage() {
   } | null>(null);
   const [error, setError] = useState("");
 
-  const [timeSlots] = useState(generateTimeSlots);
+  const [timeSlots] = useState(() => generateTimeSlots(dbTimeSlots));
   const [calendarDays] = useState(generateCalendarDays);
 
   const updateForm = (field: string, value: string) => {
@@ -146,7 +166,7 @@ export default function OpenPlayBookingPage() {
 
   const pricePerChild = selectedSlot?.price || 22;
   const subtotal = childCount * pricePerChild;
-  const tax = Number((subtotal * 0.08).toFixed(2));
+  const tax = Number((subtotal * taxRate).toFixed(2));
   const total = Number((subtotal + tax).toFixed(2));
 
   const canContinueInfo =
@@ -445,7 +465,7 @@ export default function OpenPlayBookingPage() {
                 <div>
                   <p className="text-body-s font-medium text-ink">Pay at venue</p>
                   <p className="text-body-s text-ink-secondary">
-                    No payment needed now. Pay when you arrive at WonderPlay.
+                    No payment needed now. Pay when you arrive at {venueName}.
                   </p>
                 </div>
               </div>
@@ -518,7 +538,7 @@ export default function OpenPlayBookingPage() {
 
               <div className="flex items-center justify-center gap-2 text-body-s text-ink-secondary">
                 <MapPin className="h-4 w-4" />
-                <span>WonderPlay &middot; 4521 Fun Avenue, Austin, TX 78701</span>
+                <span>{venueName} &middot; {venueAddress}</span>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 justify-center">

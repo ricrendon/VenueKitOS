@@ -23,6 +23,8 @@ CREATE TABLE venues (
   logo_url TEXT,
   hero_image_url TEXT,
   settings JSONB DEFAULT '{}',
+  operating_hours JSONB DEFAULT '[]',
+  website_content JSONB DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

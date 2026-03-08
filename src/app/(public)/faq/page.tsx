@@ -1,8 +1,9 @@
 "use client";
 
 import { Accordion } from "@/components/ui";
+import { useVenue } from "@/components/providers/venue-provider";
 
-const faqCategories = [
+const defaultFaqCategories = [
   {
     title: "Visiting",
     items: [
@@ -46,6 +47,11 @@ const faqCategories = [
 ];
 
 export default function FAQPage() {
+  const { venue } = useVenue();
+  const wc = venue?.website_content as Record<string, unknown> | undefined;
+  const faqData = wc?.faq as { categories: typeof defaultFaqCategories } | undefined;
+  const faqCategories = faqData?.categories?.length ? faqData.categories : defaultFaqCategories;
+
   return (
     <div className="pt-24 pb-16">
       <div className="container-content max-w-3xl">

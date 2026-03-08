@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useVenue } from "@/components/providers/venue-provider";
 
 const footerLinks = {
   visit: [
@@ -18,6 +19,14 @@ const footerLinks = {
 };
 
 export function Footer() {
+  const { venue } = useVenue();
+  const about = (venue?.website_content as Record<string, unknown>)?.about as { description: string } | undefined;
+  const venueName = venue?.name || "VenueKit OS";
+  const address = venue ? `${venue.address || ""}, ${venue.city || ""}, ${venue.state || ""} ${venue.zip || ""}` : "123 Play Street, City, ST 12345";
+  const phone = venue?.phone || "(555) 123-4567";
+  const email = venue?.email || "hello@yourplayground.com";
+  const description = about?.description || "A beautifully designed platform to run bookings, waivers, parties, memberships, and venue operations from one system.";
+
   return (
     <footer className="bg-ink text-cream-200">
       <div className="container-content section-padding">
@@ -38,13 +47,12 @@ export function Footer() {
               </span>
             </div>
             <p className="text-body-m text-cream-300 max-w-sm leading-relaxed">
-              A beautifully designed platform to run bookings, waivers, parties,
-              memberships, and venue operations from one system.
+              {description}
             </p>
             <div className="mt-6 text-body-s text-cream-300">
-              <p>123 Play Street, City, ST 12345</p>
-              <p className="mt-1">(555) 123-4567</p>
-              <p className="mt-1">hello@yourplayground.com</p>
+              <p>{address}</p>
+              <p className="mt-1">{phone}</p>
+              <p className="mt-1">{email}</p>
             </div>
           </div>
 
@@ -83,7 +91,7 @@ export function Footer() {
 
         <div className="mt-12 pt-8 border-t border-cream-300/20 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-caption text-cream-300">
-            &copy; {new Date().getFullYear()} VenueKit OS. All rights reserved.
+            &copy; {new Date().getFullYear()} {venueName}. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <a href="#" className="text-cream-300 hover:text-cream-50 transition-colors" aria-label="Instagram">

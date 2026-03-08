@@ -4,52 +4,53 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button, Card, CardContent, Input, Stepper, Accordion } from "@/components/ui";
 import { Check, ArrowRight, ArrowLeft, PartyPopper, Gift, CreditCard } from "lucide-react";
+import { useVenue } from "@/components/providers/venue-provider";
 
 const steps = ["Package", "Date & Time", "Party Info", "Add-Ons", "Your Info", "Review", "Confirmed"];
 
-const packages = [
+const defaultPackages = [
   {
     id: "classic",
     name: "Classic",
     price: 299,
-    children: 10,
-    duration: "90 min play + 30 min room",
-    room: "Standard Party Room",
-    host: true,
-    food: false,
-    decor: false,
-    bestFor: "Simple celebrations",
+    included_children: 10,
+    duration_minutes: 120,
+    room_type: "Standard Party Room",
+    host_included: true,
+    food_included: false,
+    decor_included: false,
+    best_for: "Simple celebrations",
     features: ["Dedicated host", "Paper goods", "Setup & cleanup", "Invitations template"],
   },
   {
     id: "premium",
     name: "Premium",
     price: 449,
-    children: 15,
-    duration: "2 hrs play + 45 min room",
-    room: "Premium Suite",
-    host: true,
-    food: true,
-    decor: true,
-    bestFor: "Most popular",
+    included_children: 15,
+    duration_minutes: 165,
+    room_type: "Premium Suite",
+    host_included: true,
+    food_included: true,
+    decor_included: true,
+    best_for: "Most popular",
     features: ["Dedicated host", "Pizza & drinks", "Decor package", "Paper goods", "Setup & cleanup", "Invitations template"],
   },
   {
     id: "ultimate",
     name: "Ultimate",
     price: 599,
-    children: 20,
-    duration: "Full venue (2.5 hrs)",
-    room: "Grand Suite",
-    host: true,
-    food: true,
-    decor: true,
-    bestFor: "Go all out",
+    included_children: 20,
+    duration_minutes: 150,
+    room_type: "Grand Suite",
+    host_included: true,
+    food_included: true,
+    decor_included: true,
+    best_for: "Go all out",
     features: ["2 dedicated hosts", "Catered food + cake", "Premium decor", "Photo station", "Goodie bags", "Full setup & cleanup"],
   },
 ];
 
-const addOns = [
+const defaultAddOns = [
   { id: "1", name: "Extra children (each)", price: 25, category: "Guests" },
   { id: "2", name: "Pizza package (10 kids)", price: 65, category: "Food" },
   { id: "3", name: "Cupcake tower", price: 45, category: "Food" },
@@ -66,6 +67,29 @@ const faqs = [
 ];
 
 export default function PartyBookingPage() {
+  const { partyPackages: dbPackages } = useVenue();
+
+  // Map DB packages to the shape this page expects, or fall back to defaults
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const packages: any[] = dbPackages.length
+    ? dbPackages.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        price: Number(p.price),
+        included_children: p.included_children,
+        duration_minutes: p.duration_minutes,
+        room_type: p.room_type,
+        host_included: p.host_included,
+        food_included: p.food_included,
+        decor_included: p.decor_included,
+        best_for: p.best_for,
+        features: Array.isArray(p.features) ? p.features : [],
+      }))
+    : defaultPackages;
+
+  // TODO: fetch add-ons from API when party_add_ons endpoint is ready
+  const addOns = defaultAddOns;
+
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedPkg, setSelectedPkg] = useState<string | null>(null);
 
@@ -91,43 +115,48 @@ export default function PartyBookingPage() {
             <div className="space-y-6">
               <h2 className="font-display text-h3 text-ink">Choose your party package</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {packages.map((pkg) => (
-                  <Card
-                    key={pkg.id}
-                    className={`cursor-pointer relative transition-all ${
-                      selectedPkg === pkg.id
-                        ? "border-terracotta ring-2 ring-terracotta/20"
-                        : "hover:shadow-card-hover"
-                    }`}
-                    onClick={() => setSelectedPkg(pkg.id)}
-                  >
-                    {pkg.bestFor === "Most popular" && (
-                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-terracotta text-white text-caption font-medium px-3 py-1 rounded-pill">
-                        Most popular
-                      </span>
-                    )}
-                    <CardContent className="pt-2">
-                      <h3 className="font-display text-h3 text-ink">{pkg.name}</h3>
-                      <p className="font-display text-h2 text-terracotta mt-1">${pkg.price}</p>
-                      <p className="text-caption text-ink-secondary">{pkg.bestFor}</p>
+                {packages.map((pkg: any) => {
+                  const isPopular = pkg.best_for === "Most popular";
+                  const featureList: string[] = Array.isArray(pkg.features) ? pkg.features : [];
+                  const durationLabel = pkg.duration_minutes ? `${pkg.duration_minutes} min` : "";
+                  return (
+                    <Card
+                      key={pkg.id}
+                      className={`cursor-pointer relative transition-all ${
+                        selectedPkg === pkg.id
+                          ? "border-terracotta ring-2 ring-terracotta/20"
+                          : "hover:shadow-card-hover"
+                      }`}
+                      onClick={() => setSelectedPkg(pkg.id)}
+                    >
+                      {isPopular && (
+                        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-terracotta text-white text-caption font-medium px-3 py-1 rounded-pill">
+                          Most popular
+                        </span>
+                      )}
+                      <CardContent className="pt-2">
+                        <h3 className="font-display text-h3 text-ink">{pkg.name}</h3>
+                        <p className="font-display text-h2 text-terracotta mt-1">${pkg.price}</p>
+                        <p className="text-caption text-ink-secondary">{pkg.best_for}</p>
 
-                      <div className="mt-4 space-y-2 text-body-s text-ink-secondary">
-                        <p>Up to {pkg.children} kids</p>
-                        <p>{pkg.duration}</p>
-                        <p>{pkg.room}</p>
-                      </div>
+                        <div className="mt-4 space-y-2 text-body-s text-ink-secondary">
+                          <p>Up to {pkg.included_children} kids</p>
+                          {durationLabel && <p>{durationLabel}</p>}
+                          {pkg.room_type && <p>{pkg.room_type}</p>}
+                        </div>
 
-                      <ul className="mt-4 space-y-2">
-                        {pkg.features.map((f) => (
-                          <li key={f} className="flex items-start gap-2 text-body-s text-ink-secondary">
-                            <Check className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                            {f}
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <ul className="mt-4 space-y-2">
+                          {featureList.map((f: string) => (
+                            <li key={f} className="flex items-start gap-2 text-body-s text-ink-secondary">
+                              <Check className="h-4 w-4 text-success shrink-0 mt-0.5" />
+                              {f}
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
               <Button size="lg" className="w-full" disabled={!selectedPkg} onClick={() => setCurrentStep(1)}>
                 Continue with {selectedPkg ? packages.find((p) => p.id === selectedPkg)?.name : "..."}{" "}

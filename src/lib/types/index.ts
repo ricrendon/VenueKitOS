@@ -38,6 +38,7 @@ export interface Venue {
   heroImageUrl?: string;
   operatingHours: OperatingHours[];
   settings: VenueSettings;
+  websiteContent: WebsiteContent;
 }
 
 export interface OperatingHours {
@@ -55,6 +56,55 @@ export interface VenueSettings {
   bookingLeadTimeHours: number;
   cancellationPolicyHours: number;
   taxRate: number;
+}
+
+// Website CMS Content (stored in venues.website_content JSONB)
+export interface WebsiteContent {
+  hero: {
+    headline: string;
+    description: string;
+    imageUrl?: string | null;
+  };
+  trustStats: {
+    rating: string;
+    ratingSource: string;
+    familiesServed: string;
+    reviews: string;
+  };
+  valueProps: {
+    sectionTitle: string;
+    sectionSubtitle: string;
+    items: { icon: string; title: string; description: string }[];
+  };
+  about: {
+    description: string;
+  };
+  faq: {
+    categories: {
+      title: string;
+      items: { id: string; question: string; answer: string }[];
+    }[];
+  };
+  policies: {
+    cancellationHours: number;
+    cancellationText: string;
+    waiverPolicyText: string;
+    depositPercentage: number;
+    depositPolicyText: string;
+  };
+  openPlaySessions: {
+    id: string;
+    name: string;
+    description: string;
+    priceRange: string;
+    perLabel: string;
+  }[];
+  openPlayTimeSlots: {
+    time: string;
+    label: string;
+    endTime: string;
+    price: number;
+  }[];
 }
 
 // Families & Children
