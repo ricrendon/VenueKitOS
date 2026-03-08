@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { Card, CardContent } from "@/components/ui";
 
 interface PeakHoursHeatmapProps {
@@ -59,8 +60,8 @@ export function PeakHoursHeatmap({ data }: PeakHoursHeatmapProps) {
 
               {/* Day rows */}
               {DAY_LABELS.map((day, dayIndex) => (
-                <>
-                  <div key={`label-${dayIndex}`} className="text-body-s text-ink-secondary font-medium flex items-center">
+                <Fragment key={dayIndex}>
+                  <div className="text-body-s text-ink-secondary font-medium flex items-center">
                     {day}
                   </div>
                   {HOURS.map((hour) => {
@@ -73,7 +74,7 @@ export function PeakHoursHeatmap({ data }: PeakHoursHeatmapProps) {
                       />
                     );
                   })}
-                </>
+                </Fragment>
               ))}
             </div>
 

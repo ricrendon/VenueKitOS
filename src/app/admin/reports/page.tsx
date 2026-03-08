@@ -34,7 +34,15 @@ export default function ReportsPage() {
   const [period, setPeriod] = useState("30d");
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const handleTabChange = (tabId: TabId) => {
+    if (tabId === activeTab) return;
+    // Clear data immediately to prevent stale data from rendering with new tab
+    setData(null);
+    setLoading(tabId !== "social");
+    setActiveTab(tabId);
+  };
 
   useEffect(() => {
     // Social tab manages its own data
@@ -44,12 +52,16 @@ export default function ReportsPage() {
     setData(null);
 
     fetch(`/api/admin/reports?tab=${activeTab}&period=${period}`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch");
+        return res.json();
+      })
       .then((json) => {
         setData(json);
         setLoading(false);
       })
       .catch(() => {
+        setData(null);
         setLoading(false);
       });
   }, [activeTab, period]);
@@ -83,7 +95,7 @@ export default function ReportsPage() {
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`flex items-center gap-2 px-4 py-2.5 text-body-s font-medium rounded-t-md transition-colors ${
                 isActive
                   ? "bg-white text-terracotta border border-cream-300 border-b-white -mb-px"
