@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Check } from "lucide-react";
 import {
   Building2, Clock, Globe, PartyPopper, CreditCard,
-  HelpCircle, FileText, Settings, Link2,
+  HelpCircle, FileText, Settings, Link2, Shield,
 } from "lucide-react";
 import { VenueInfoForm } from "@/components/admin/settings/venue-info-form";
 import { OperatingHoursForm } from "@/components/admin/settings/operating-hours-form";
@@ -13,6 +13,7 @@ import { FaqEditor } from "@/components/admin/settings/faq-editor";
 import { PoliciesForm } from "@/components/admin/settings/policies-form";
 import { OperationsForm } from "@/components/admin/settings/operations-form";
 import { IntegrationsSection } from "@/components/admin/settings/integrations-section";
+import { StaffPermissionsForm } from "@/components/admin/settings/staff-permissions-form";
 
 interface VenueData {
   name: string;
@@ -39,6 +40,7 @@ const tabs = [
   { id: "policies", label: "Policies", icon: FileText },
   { id: "operations", label: "Operations", icon: Settings },
   { id: "integrations", label: "Integrations", icon: Link2 },
+  { id: "permissions", label: "Permissions", icon: Shield },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -235,6 +237,10 @@ export default function SettingsPage() {
 
         {activeTab === "integrations" && (
           <IntegrationsSection />
+        )}
+
+        {activeTab === "permissions" && (
+          <StaffPermissionsForm />
         )}
       </div>
     </div>

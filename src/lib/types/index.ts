@@ -395,6 +395,81 @@ export interface DashboardKPIs {
   activeMemberships: number;
 }
 
+// Permissions
+export type PageKey =
+  | "dashboard"
+  | "reservations"
+  | "check-in"
+  | "pos"
+  | "inventory"
+  | "gift-cards"
+  | "waivers"
+  | "families"
+  | "parties"
+  | "time-clock"
+  | "marketing"
+  | "reports"
+  | "incidents"
+  | "memberships"
+  | "settings";
+
+export interface StaffPermission {
+  id: string;
+  staff_id: string;
+  page_key: PageKey;
+  granted: boolean;
+  updated_at: string;
+}
+
+// Incidents
+export type IncidentType =
+  | "injury"
+  | "property_damage"
+  | "behavioral"
+  | "equipment_failure"
+  | "safety_hazard"
+  | "medical"
+  | "theft"
+  | "other";
+
+export type IncidentSeverity = "low" | "medium" | "high" | "critical";
+
+export type IncidentArea =
+  | "play_area"
+  | "party_rooms"
+  | "lobby"
+  | "restrooms"
+  | "kitchen"
+  | "outdoor"
+  | "parking"
+  | "other";
+
+export type IncidentStatus = "open" | "investigating" | "resolved" | "closed";
+
+export type OperationalImpact = "none" | "minor" | "moderate" | "severe";
+
+export interface Incident {
+  id: string;
+  venue_id: string;
+  reported_by: string;
+  reporter_name?: string;
+  type: IncidentType;
+  title: string;
+  description: string | null;
+  severity: IncidentSeverity;
+  affected_area: IncidentArea;
+  status: IncidentStatus;
+  resolution_notes: string | null;
+  resolution_cost: number;
+  operational_impact: OperationalImpact | null;
+  outcome: string | null;
+  resolved_by: string | null;
+  resolver_name?: string;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Time Clock
 export type TimeEntryStatus = "active" | "completed";
 

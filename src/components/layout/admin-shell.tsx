@@ -5,10 +5,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import { HREF_TO_PAGE_KEY } from "@/lib/permissions";
 import {
   LayoutDashboard, Calendar, PartyPopper, FileCheck,
   Users, CreditCard, ClipboardCheck, Timer, ShoppingCart,
-  Package, Gift, BarChart3, Megaphone, Settings, Search, Bell, ChevronDown,
+  Package, Gift, BarChart3, Megaphone, AlertTriangle, Settings, Search, Bell, ChevronDown,
   Menu, X, LogOut,
 } from "lucide-react";
 
@@ -26,6 +28,7 @@ const sidebarNav = [
   { href: "/admin/gift-cards", label: "Gift Cards", icon: Gift },
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   { href: "/admin/marketing", label: "Marketing", icon: Megaphone },
+  { href: "/admin/incidents", label: "Incidents", icon: AlertTriangle },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
@@ -33,6 +36,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { allowedPages } = usePermissions();
+
+  // Filter sidebar items by the user's allowed pages
+  const visibleNav = sidebarNav.filter((item) => {
+    const pageKey = HREF_TO_PAGE_KEY[item.href];
+    if (!pageKey) return true; // show items not mapped (shouldn't happen)
+    return allowedPages.has(pageKey);
+  });
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -67,7 +78,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           <ul className="space-y-1">
-            {sidebarNav.map((item) => {
+            {visibleNav.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
               return (
                 <li key={item.href}>
