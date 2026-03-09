@@ -32,7 +32,13 @@ const sidebarNav = [
   { href: "/admin/incidents", label: "Incidents", icon: AlertTriangle },
 ];
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+interface AdminShellProps {
+  children: React.ReactNode;
+  venueName?: string | null;
+  logoUrl?: string | null;
+}
+
+export function AdminShell({ children, venueName, logoUrl }: AdminShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -63,11 +69,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         {/* Sidebar header */}
         <div className="flex items-center justify-between px-5 h-16 border-b border-cream-300/10">
           <Link href="/admin/dashboard" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-sm bg-terracotta flex items-center justify-center">
-              <span className="text-white font-display font-bold text-body-s">V</span>
+            <div className="h-8 w-8 rounded-sm bg-terracotta flex items-center justify-center shrink-0">
+              {logoUrl ? (
+                <img src={logoUrl} alt={venueName ?? "Venue"} className="h-6 w-6 object-contain" />
+              ) : (
+                <span className="text-white font-display font-bold text-body-s">
+                  {venueName ? venueName[0].toUpperCase() : "V"}
+                </span>
+              )}
             </div>
             <span className="font-display font-semibold text-body-m text-cream-50">
-              VenueKit OS
+              {venueName ?? "VenueKit OS"}
             </span>
           </Link>
           <button className="lg:hidden text-cream-300 hover:text-cream-50" onClick={() => setSidebarOpen(false)}>
