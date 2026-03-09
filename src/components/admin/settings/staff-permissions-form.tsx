@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Button, Badge, useToast } from "@/components/ui";
-import { Loader2, Shield, Save } from "lucide-react";
+import { Loader2, Shield, Save, RotateCcw } from "lucide-react";
 
 interface StaffMember {
   id: string;
@@ -38,6 +38,7 @@ export function StaffPermissionsForm() {
   const [loading, setLoading] = useState(true);
   const [loadingPerms, setLoadingPerms] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const { toast } = useToast();
 
   // Fetch staff list
@@ -119,6 +120,29 @@ export function StaffPermissionsForm() {
     }
   };
 
+  const handleReset = async () => {
+    if (!selectedStaffId) return;
+    setResetting(true);
+    try {
+      const res = await fetch(`/api/admin/staff/${selectedStaffId}/permissions`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        toast("success", "Permissions reset to role defaults");
+        await fetchPermissions(selectedStaffId);
+      } else {
+        const json = await res.json();
+        toast("error", json.error || "Failed to reset");
+      }
+    } catch {
+      toast("error", "Network error");
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const hasOverrides = permissions.some((p) => p.hasOverride);
   const isFullAccess = staffInfo && FULL_ACCESS_ROLES.includes(staffInfo.role);
 
   if (loading) {
@@ -230,9 +254,21 @@ export function StaffPermissionsForm() {
                 </table>
               </div>
 
-              {/* Save button */}
+              {/* Action buttons */}
               {!isFullAccess && (
-                <div className="flex justify-end">
+                <div className="flex justify-between items-center">
+                  <Button
+                    variant="secondary"
+                    onClick={handleReset}
+                    disabled={resetting || !hasOverrides}
+                  >
+                    {resetting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-4 w-4" />
+                    )}
+                    Reset to Default
+                  </Button>
                   <Button onClick={handleSave} disabled={saving}>
                     {saving ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

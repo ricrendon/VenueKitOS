@@ -133,3 +133,41 @@ export async function PUT(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+// DELETE — remove all overrides, resetting to role defaults
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: staffId } = await params;
+    const supabase = createAdminClient();
+
+    // Verify staff exists
+    const { data: staff } = await supabase
+      .from("staff_users")
+      .select("id")
+      .eq("id", staffId)
+      .single();
+
+    if (!staff) {
+      return NextResponse.json({ error: "Staff member not found" }, { status: 404 });
+    }
+
+    // Delete all overrides for this staff member
+    const { error } = await supabase
+      .from("staff_permissions")
+      .delete()
+      .eq("staff_id", staffId);
+
+    if (error) {
+      console.error("Staff permissions DELETE error:", error);
+      return NextResponse.json({ error: "Failed to reset permissions" }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Staff permissions DELETE error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
