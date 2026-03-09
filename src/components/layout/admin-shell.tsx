@@ -10,7 +10,7 @@ import { HREF_TO_PAGE_KEY } from "@/lib/permissions";
 import {
   LayoutDashboard, Calendar, PartyPopper, FileCheck,
   Users, CreditCard, ClipboardCheck, Timer, ShoppingCart,
-  Package, Gift, BarChart3, Megaphone, AlertTriangle, Settings, Search, Bell, ChevronDown,
+  Package, Gift, BarChart3, Megaphone, UserCog, AlertTriangle, Settings, Search, Bell, ChevronDown,
   Menu, X, LogOut,
 } from "lucide-react";
 
@@ -28,6 +28,7 @@ const sidebarNav = [
   { href: "/admin/gift-cards", label: "Gift Cards", icon: Gift },
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   { href: "/admin/marketing", label: "Marketing", icon: Megaphone },
+  { href: "/admin/staff", label: "Staff", icon: UserCog },
   { href: "/admin/incidents", label: "Incidents", icon: AlertTriangle },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];

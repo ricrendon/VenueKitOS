@@ -22,6 +22,20 @@ export interface User {
   createdAt: string;
 }
 
+export interface StaffMember {
+  id: string;
+  auth_user_id: string | null;
+  venue_id: string;
+  role: UserRole;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string | null;
+  avatar_url: string | null;
+  active: boolean;
+  created_at: string;
+}
+
 // Venue
 export interface Venue {
   id: string;
@@ -411,6 +425,7 @@ export type PageKey =
   | "reports"
   | "incidents"
   | "memberships"
+  | "staff"
   | "settings";
 
 export interface StaffPermission {

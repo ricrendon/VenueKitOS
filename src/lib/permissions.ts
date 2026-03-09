@@ -15,6 +15,7 @@ export const ADMIN_PAGES: { key: PageKey; label: string; href: string }[] = [
   { key: "gift-cards", label: "Gift Cards", href: "/admin/gift-cards" },
   { key: "reports", label: "Reports", href: "/admin/reports" },
   { key: "marketing", label: "Marketing", href: "/admin/marketing" },
+  { key: "staff", label: "Staff", href: "/admin/staff" },
   { key: "incidents", label: "Incidents", href: "/admin/incidents" },
   { key: "settings", label: "Settings", href: "/admin/settings" },
 ];
