@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Check } from "lucide-react";
 import {
-  Building2, Clock, Globe, PartyPopper, CreditCard,
-  HelpCircle, FileText, Settings, Link2, Shield,
+  Building2, Clock, Globe, FileText, Settings, Link2, Shield,
 } from "lucide-react";
 import { VenueInfoForm } from "@/components/admin/settings/venue-info-form";
 import { OperatingHoursForm } from "@/components/admin/settings/operating-hours-form";
@@ -14,6 +13,7 @@ import { PoliciesForm } from "@/components/admin/settings/policies-form";
 import { OperationsForm } from "@/components/admin/settings/operations-form";
 import { IntegrationsSection } from "@/components/admin/settings/integrations-section";
 import { StaffPermissionsForm } from "@/components/admin/settings/staff-permissions-form";
+import { MenuEditor } from "@/components/admin/settings/menu-editor";
 
 interface VenueData {
   name: string;
@@ -36,12 +36,19 @@ const tabs = [
   { id: "venue", label: "Venue Info", icon: Building2 },
   { id: "hours", label: "Hours", icon: Clock },
   { id: "website", label: "Website", icon: Globe },
-  { id: "faq", label: "FAQ", icon: HelpCircle },
   { id: "policies", label: "Policies", icon: FileText },
   { id: "operations", label: "Operations", icon: Settings },
   { id: "integrations", label: "Integrations", icon: Link2 },
   { id: "permissions", label: "Permissions", icon: Shield },
 ] as const;
+
+const websiteSubTabs = [
+  { id: "content", label: "Content" },
+  { id: "faq", label: "FAQ" },
+  { id: "menu", label: "Menu" },
+] as const;
+
+type WebsiteSubTabId = (typeof websiteSubTabs)[number]["id"];
 
 type TabId = (typeof tabs)[number]["id"];
 
@@ -50,6 +57,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>("venue");
+  const [websiteSubTab, setWebsiteSubTab] = useState<WebsiteSubTabId>("content");
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
@@ -177,24 +185,49 @@ export default function SettingsPage() {
         )}
 
         {activeTab === "website" && (
-          <WebsiteContentForm
-            data={{
-              hero: (wc.hero as any) || { headline: "", description: "" },
-              trustStats: (wc.trustStats as any) || { rating: "", ratingSource: "", familiesServed: "", reviews: "" },
-              valueProps: (wc.valueProps as { sectionTitle: string; sectionSubtitle: string; items: { icon: string; title: string; description: string }[] }) || { sectionTitle: "", sectionSubtitle: "", items: [] },
-              about: (wc.about as { description: string }) || { description: "" },
-            }}
-            onSave={(content) => handleSave({ website_content: content })}
-            saving={saving}
-          />
-        )}
+          <div className="space-y-6">
+            {/* Sub-tab pills */}
+            <div className="bg-cream-200 rounded-lg p-1 w-fit flex gap-1">
+              {websiteSubTabs.map((sub) => (
+                <button
+                  key={sub.id}
+                  onClick={() => setWebsiteSubTab(sub.id)}
+                  className={`px-4 py-1.5 rounded-md text-body-s font-medium transition-colors ${
+                    websiteSubTab === sub.id
+                      ? "bg-white text-terracotta shadow-sm"
+                      : "text-ink-secondary hover:text-ink"
+                  }`}
+                >
+                  {sub.label}
+                </button>
+              ))}
+            </div>
 
-        {activeTab === "faq" && (
-          <FaqEditor
-            data={(wc.faq as { categories: { title: string; items: { id: string; question: string; answer: string }[] }[] }) || { categories: [] }}
-            onSave={(faq) => handleSave({ website_content: { faq } })}
-            saving={saving}
-          />
+            {websiteSubTab === "content" && (
+              <WebsiteContentForm
+                data={{
+                  hero: (wc.hero as any) || { headline: "", description: "" },
+                  trustStats: (wc.trustStats as any) || { rating: "", ratingSource: "", familiesServed: "", reviews: "" },
+                  valueProps: (wc.valueProps as { sectionTitle: string; sectionSubtitle: string; items: { icon: string; title: string; description: string }[] }) || { sectionTitle: "", sectionSubtitle: "", items: [] },
+                  about: (wc.about as { description: string }) || { description: "" },
+                }}
+                onSave={(content) => handleSave({ website_content: content })}
+                saving={saving}
+              />
+            )}
+
+            {websiteSubTab === "faq" && (
+              <FaqEditor
+                data={(wc.faq as { categories: { title: string; items: { id: string; question: string; answer: string }[] }[] }) || { categories: [] }}
+                onSave={(faq) => handleSave({ website_content: { faq } })}
+                saving={saving}
+              />
+            )}
+
+            {websiteSubTab === "menu" && (
+              <MenuEditor />
+            )}
+          </div>
         )}
 
         {activeTab === "policies" && (

@@ -22,11 +22,13 @@ import {
   Plus,
   Trash2,
   CircleDot,
+  FileText,
 } from "lucide-react";
 import {
   ClockInOutModal,
   ManualEntryModal,
 } from "@/components/admin/time-clock/clock-in-out-modal";
+import { TimeCardModal } from "@/components/admin/time-clock/time-card-modal";
 
 interface TimeEntryRow {
   id: string;
@@ -66,6 +68,7 @@ export default function TimeClockPage() {
   const [clockModalOpen, setClockModalOpen] = useState(false);
   const [clockModalMode, setClockModalMode] = useState<"in" | "out">("in");
   const [manualModalOpen, setManualModalOpen] = useState(false);
+  const [timeCardModalOpen, setTimeCardModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -192,6 +195,12 @@ export default function TimeClockPage() {
           <p className="text-body-m text-ink-secondary">Track staff hours and shifts</p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => setTimeCardModalOpen(true)}
+          >
+            <FileText className="h-4 w-4" /> Time Cards
+          </Button>
           <Button
             variant="secondary"
             onClick={() => setManualModalOpen(true)}
@@ -404,6 +413,12 @@ export default function TimeClockPage() {
         open={manualModalOpen}
         onClose={() => setManualModalOpen(false)}
         onSubmit={handleManualEntry}
+        staff={staff}
+      />
+
+      <TimeCardModal
+        open={timeCardModalOpen}
+        onClose={() => setTimeCardModalOpen(false)}
         staff={staff}
       />
     </div>

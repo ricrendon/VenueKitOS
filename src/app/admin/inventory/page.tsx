@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Card, CardContent, Badge, MetricCard, Button } from "@/components/ui";
-import { Package, DollarSign, AlertTriangle, XCircle, Loader2, Plus } from "lucide-react";
+import { Package, DollarSign, AlertTriangle, XCircle, Loader2, Plus, Download } from "lucide-react";
+import { downloadCsv } from "@/lib/utils";
 import { AddItemModal } from "@/components/admin/inventory/add-item-modal";
 import { InventoryFilters } from "@/components/admin/inventory/inventory-filters";
 
@@ -78,6 +79,30 @@ export default function InventoryPage() {
     return () => clearTimeout(timeout);
   }, [fetchData, search]);
 
+  const handleDownload = () => {
+    const headers = [
+      "SKU", "Name", "Category", "Price", "Cost",
+      "Quantity", "Reorder Level", "Unit", "Supplier", "Status",
+    ];
+    const rows = items.map((item) => {
+      const badge = stockBadge(item.quantityOnHand, item.reorderLevel, item.active);
+      return [
+        item.sku || "",
+        item.name,
+        item.category,
+        `$${item.price.toFixed(2)}`,
+        item.cost != null ? `$${item.cost.toFixed(2)}` : "",
+        item.quantityOnHand,
+        item.reorderLevel,
+        item.unit,
+        item.supplier || "",
+        badge.label,
+      ];
+    });
+    const today = new Date().toISOString().split("T")[0];
+    downloadCsv(`inventory-report-${today}.csv`, headers, rows);
+  };
+
   if (loading && !items.length) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -94,10 +119,16 @@ export default function InventoryPage() {
           <h1 className="font-display text-h1 text-ink">Inventory</h1>
           <p className="text-body-m text-ink-secondary">Track stock levels, costs, and suppliers.</p>
         </div>
-        <Button onClick={() => setShowAddModal(true)}>
-          <Plus className="h-4 w-4 mr-1.5" />
-          Add Item
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={handleDownload} disabled={items.length === 0}>
+            <Download className="h-4 w-4 mr-1.5" />
+            Download Report
+          </Button>
+          <Button onClick={() => setShowAddModal(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Add Item
+          </Button>
+        </div>
       </div>
 
       {/* KPIs */}

@@ -19,13 +19,23 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
-    const date = searchParams.get("date") || getLocalToday(VENUE_TZ);
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
     const staffId = searchParams.get("staffId") || "";
     const status = searchParams.get("status") || "";
 
-    // Build query — fetch entries for the given date range
-    const dayStart = `${date}T00:00:00`;
-    const dayEnd = `${date}T23:59:59`;
+    // Support date range (for time card generation) or single date
+    let dayStart: string;
+    let dayEnd: string;
+
+    if (startDate && endDate) {
+      dayStart = `${startDate}T00:00:00`;
+      dayEnd = `${endDate}T23:59:59`;
+    } else {
+      const date = searchParams.get("date") || getLocalToday(VENUE_TZ);
+      dayStart = `${date}T00:00:00`;
+      dayEnd = `${date}T23:59:59`;
+    }
 
     let query = supabase
       .from("time_entries")

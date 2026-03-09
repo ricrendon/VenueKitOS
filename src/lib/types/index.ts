@@ -36,6 +36,21 @@ export interface StaffMember {
   created_at: string;
 }
 
+// Menu Items
+export interface MenuItem {
+  id: string;
+  venueId: string;
+  name: string;
+  description: string | null;
+  price: number;
+  category: string;
+  imageUrl: string | null;
+  available: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Venue
 export interface Venue {
   id: string;
