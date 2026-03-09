@@ -30,7 +30,6 @@ const sidebarNav = [
   { href: "/admin/marketing", label: "Marketing", icon: Megaphone },
   { href: "/admin/staff", label: "Staff", icon: UserCog },
   { href: "/admin/incidents", label: "Incidents", icon: AlertTriangle },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
@@ -103,7 +102,20 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Sidebar footer */}
-        <div className="px-3 py-4 border-t border-cream-300/10">
+        <div className="px-3 py-4 border-t border-cream-300/10 space-y-1">
+          <Link
+            href="/admin/settings"
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-sm text-body-s transition-colors",
+              pathname === "/admin/settings" || pathname.startsWith("/admin/settings/")
+                ? "bg-terracotta text-white font-medium"
+                : "text-cream-300 hover:text-cream-50 hover:bg-cream-300/10"
+            )}
+            onClick={() => setSidebarOpen(false)}
+          >
+            <Settings className="h-5 w-5 shrink-0" />
+            Settings
+          </Link>
           <button
             onClick={handleSignOut}
             className="flex items-center gap-3 px-3 py-2.5 w-full rounded-sm text-body-s text-cream-300 hover:text-cream-50 hover:bg-cream-300/10 transition-colors"
