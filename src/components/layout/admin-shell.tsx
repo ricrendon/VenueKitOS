@@ -77,7 +77,7 @@ export function AdminShell({ children, venueName, logoUrl }: AdminShellProps) {
               )}
             </div>
             <span className="font-display font-semibold text-body-m text-cream-300">
-              Your Company Name & Logo
+              Company Logo
             </span>
           </Link>
           <button className="lg:hidden text-cream-300 hover:text-cream-50" onClick={() => setSidebarOpen(false)}>
