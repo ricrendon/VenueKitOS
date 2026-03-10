@@ -93,7 +93,7 @@ export default function LoginPage() {
             <Input
               label="Email"
               type="email"
-              placeholder="admin@wonderplay.com"
+              placeholder="admin@demo.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -141,7 +141,7 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-4 text-center text-caption text-ink-secondary/60">
-          Demo: <span className="font-mono text-ink-secondary">admin@wonderplay.com</span> / <span className="font-mono text-ink-secondary">WonderPlay2026!</span>
+          Demo: <span className="font-mono text-ink-secondary">admin@demo.com</span> / <span className="font-mono text-ink-secondary">demo1234</span>
         </p>
 
         <p className="mt-2 text-center text-caption text-ink-secondary">

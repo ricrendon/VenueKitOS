@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Button, Input, Modal } from "@/components/ui";
+import { useState, useEffect } from "react";
+import { Button, Input, Modal, Select } from "@/components/ui";
 import { useToast } from "@/components/ui";
 import { Loader2 } from "lucide-react";
 
@@ -15,13 +15,42 @@ interface AdjustStockModalProps {
   unit: string;
 }
 
-type TransactionType = "received" | "adjustment" | "return" | "damaged";
+interface LocationOption {
+  id: string;
+  name: string;
+}
 
-const TX_TYPES: { value: TransactionType; label: string; activeClass: string; direction: "add" | "remove" | "both" }[] = [
-  { value: "received", label: "Received", activeClass: "bg-sage text-white", direction: "add" },
-  { value: "adjustment", label: "Adjustment", activeClass: "bg-dusty-blue text-white", direction: "both" },
-  { value: "return", label: "Return", activeClass: "bg-mustard text-white", direction: "add" },
-  { value: "damaged", label: "Damaged", activeClass: "bg-terracotta text-white", direction: "remove" },
+type EventTypeOption = {
+  value: string;
+  label: string;
+  direction: "add" | "remove" | "both";
+  activeClass: string;
+  group: string;
+};
+
+const EVENT_TYPES: EventTypeOption[] = [
+  { value: "receive", label: "Received", direction: "add", activeClass: "bg-sage text-white", group: "In" },
+  { value: "transfer_in", label: "Transfer In", direction: "add", activeClass: "bg-sage text-white", group: "In" },
+  { value: "adjustment", label: "Adjustment", direction: "both", activeClass: "bg-dusty-blue text-white", group: "Adjust" },
+  { value: "count_reconciliation", label: "Count Reconciliation", direction: "both", activeClass: "bg-dusty-blue text-white", group: "Adjust" },
+  { value: "waste", label: "Waste", direction: "remove", activeClass: "bg-terracotta text-white", group: "Out" },
+  { value: "spoilage", label: "Spoilage", direction: "remove", activeClass: "bg-terracotta text-white", group: "Out" },
+  { value: "usage", label: "Usage", direction: "remove", activeClass: "bg-mustard text-white", group: "Out" },
+  { value: "return_to_vendor", label: "Return to Vendor", direction: "remove", activeClass: "bg-mustard text-white", group: "Out" },
+  { value: "transfer_out", label: "Transfer Out", direction: "remove", activeClass: "bg-mustard text-white", group: "Out" },
+];
+
+const REASON_OPTIONS = [
+  { value: "", label: "Select reason (optional)" },
+  { value: "Breakage", label: "Breakage" },
+  { value: "Spoilage/Expired", label: "Spoilage / Expired" },
+  { value: "Damaged in transit", label: "Damaged in transit" },
+  { value: "Theft/Shrinkage", label: "Theft / Shrinkage" },
+  { value: "Miscount correction", label: "Miscount correction" },
+  { value: "Unrecorded usage", label: "Unrecorded usage" },
+  { value: "Transfer error", label: "Transfer error" },
+  { value: "Vendor return", label: "Vendor return" },
+  { value: "Other", label: "Other" },
 ];
 
 export function AdjustStockModal({
@@ -35,19 +64,45 @@ export function AdjustStockModal({
 }: AdjustStockModalProps) {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
-  const [txType, setTxType] = useState<TransactionType>("received");
+  const [eventType, setEventType] = useState("receive");
   const [quantity, setQuantity] = useState("");
   const [direction, setDirection] = useState<"add" | "remove">("add");
   const [notes, setNotes] = useState("");
+  const [reason, setReason] = useState("");
+  const [unitCost, setUnitCost] = useState("");
+  const [locationId, setLocationId] = useState("");
+  const [locations, setLocations] = useState<LocationOption[]>([]);
+
+  // Load locations
+  useEffect(() => {
+    if (!open) return;
+    fetch("/api/admin/inventory/locations")
+      .then((r) => r.json())
+      .then((json) => {
+        const locs = (json.locations || []).filter((l: { active: boolean }) => l.active);
+        setLocations(locs);
+      })
+      .catch(() => setLocations([]));
+  }, [open]);
 
   const numQty = Number(quantity) || 0;
-  const activeTx = TX_TYPES.find((t) => t.value === txType)!;
+  const activeEvent = EVENT_TYPES.find((t) => t.value === eventType)!;
 
   // Calculate signed change
   const isRemoving =
-    activeTx.direction === "remove" || (activeTx.direction === "both" && direction === "remove");
+    activeEvent.direction === "remove" || (activeEvent.direction === "both" && direction === "remove");
   const signedChange = isRemoving ? -numQty : numQty;
   const newQuantity = currentQuantity + signedChange;
+
+  const handleReset = () => {
+    setQuantity("");
+    setNotes("");
+    setReason("");
+    setUnitCost("");
+    setLocationId("");
+    setEventType("receive");
+    setDirection("add");
+  };
 
   const handleSubmit = async () => {
     if (numQty <= 0) {
@@ -62,14 +117,18 @@ export function AdjustStockModal({
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/admin/inventory/${productId}`, {
-        method: "PATCH",
+      const res = await fetch("/api/admin/inventory/adjustments", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "adjust_stock",
-          type: txType,
-          quantityChange: signedChange,
+          itemId: productId,
+          eventType,
+          quantity: numQty,
+          direction: activeEvent.direction === "both" ? direction : undefined,
+          locationId: locationId || undefined,
+          unitCost: unitCost ? Number(unitCost) : undefined,
           notes: notes || undefined,
+          reason: reason || undefined,
         }),
       });
 
@@ -77,10 +136,7 @@ export function AdjustStockModal({
       if (!res.ok) throw new Error(json.error || "Failed to adjust stock");
 
       toast("success", `Stock updated for ${productName}`);
-      setQuantity("");
-      setNotes("");
-      setTxType("received");
-      setDirection("add");
+      handleReset();
       onSuccess();
       onClose();
     } catch (err) {
@@ -91,7 +147,7 @@ export function AdjustStockModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Adjust Stock" description={productName} size="sm">
+    <Modal open={open} onClose={onClose} title="Adjust Stock" description={productName} size="md">
       <div className="space-y-4">
         {/* Current Stock */}
         <div className="bg-cream-200 rounded-sm px-4 py-3 text-center">
@@ -101,28 +157,31 @@ export function AdjustStockModal({
           </p>
         </div>
 
-        {/* Transaction Type */}
-        <div className="grid grid-cols-2 gap-2">
-          {TX_TYPES.map((t) => (
-            <button
-              key={t.value}
-              type="button"
-              onClick={() => {
-                setTxType(t.value);
-                if (t.direction === "add") setDirection("add");
-                else if (t.direction === "remove") setDirection("remove");
-              }}
-              className={`py-2.5 rounded-sm text-body-s font-medium transition-colors ${
-                txType === t.value ? t.activeClass : "bg-cream-200 text-ink hover:bg-cream-300"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+        {/* Event Type — grouped */}
+        <div>
+          <label className="text-label text-ink-secondary font-medium mb-2 block">Type</label>
+          <div className="grid grid-cols-3 gap-1.5">
+            {EVENT_TYPES.map((t) => (
+              <button
+                key={t.value}
+                type="button"
+                onClick={() => {
+                  setEventType(t.value);
+                  if (t.direction === "add") setDirection("add");
+                  else if (t.direction === "remove") setDirection("remove");
+                }}
+                className={`py-2 rounded-sm text-caption font-medium transition-colors ${
+                  eventType === t.value ? t.activeClass : "bg-cream-200 text-ink hover:bg-cream-300"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Direction toggle (only for adjustment type) */}
-        {activeTx.direction === "both" && (
+        {/* Direction toggle (only for adjustment/count_reconciliation types) */}
+        {activeEvent.direction === "both" && (
           <div className="flex gap-2">
             <button
               type="button"
@@ -145,15 +204,52 @@ export function AdjustStockModal({
           </div>
         )}
 
-        {/* Quantity */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Quantity */}
+          <div>
+            <label className="text-label text-ink-secondary font-medium mb-1 block">Quantity *</label>
+            <Input
+              type="number"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              placeholder="0"
+              min={1}
+            />
+          </div>
+
+          {/* Unit Cost (for receives) */}
+          <div>
+            <label className="text-label text-ink-secondary font-medium mb-1 block">Unit Cost</label>
+            <Input
+              type="number"
+              value={unitCost}
+              onChange={(e) => setUnitCost(e.target.value)}
+              placeholder="$0.00"
+              min={0}
+              step="0.01"
+            />
+          </div>
+        </div>
+
+        {/* Location */}
+        {locations.length > 0 && (
+          <div>
+            <label className="text-label text-ink-secondary font-medium mb-1 block">Location</label>
+            <Select
+              options={[{ value: "", label: "All Locations (Default)" }, ...locations.map((l) => ({ value: l.id, label: l.name }))]}
+              value={locationId}
+              onChange={(e) => setLocationId(e.target.value)}
+            />
+          </div>
+        )}
+
+        {/* Reason */}
         <div>
-          <label className="text-label text-ink-secondary font-medium mb-1 block">Quantity</label>
-          <Input
-            type="number"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            placeholder="0"
-            min={1}
+          <label className="text-label text-ink-secondary font-medium mb-1 block">Reason</label>
+          <Select
+            options={REASON_OPTIONS}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
           />
         </div>
 
@@ -163,19 +259,22 @@ export function AdjustStockModal({
           <Input
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Reason for adjustment..."
+            placeholder="Additional details..."
           />
         </div>
 
         {/* Preview */}
         {numQty > 0 && (
-          <div className={`rounded-sm px-4 py-3 text-center ${newQuantity < 0 ? "bg-error/10" : "bg-sage/10"}`}>
+          <div className={`rounded-sm px-4 py-3 text-center ${newQuantity < 0 ? "bg-error/10" : isRemoving ? "bg-terracotta/10" : "bg-sage/10"}`}>
             <p className="text-body-s text-ink">
-              Stock will be{" "}
+              <span className={`font-medium ${isRemoving ? "text-terracotta" : "text-sage"}`}>
+                {isRemoving ? "-" : "+"}{numQty}
+              </span>
+              {" "}→ Stock will be{" "}
               <span className="font-display font-semibold text-h4">
                 {newQuantity}
               </span>{" "}
-              {unit} after this change
+              {unit}
             </p>
           </div>
         )}
@@ -186,7 +285,7 @@ export function AdjustStockModal({
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={submitting || numQty <= 0 || newQuantity < 0} className="flex-1">
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply Adjustment"}
           </Button>
         </div>
       </div>

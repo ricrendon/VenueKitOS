@@ -69,17 +69,15 @@ export function AdminShell({ children, venueName, logoUrl }: AdminShellProps) {
         {/* Sidebar header */}
         <div className="flex items-center justify-between px-5 h-16 border-b border-cream-300/10">
           <Link href="/admin/dashboard" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-sm bg-terracotta flex items-center justify-center shrink-0">
+            <div className="h-8 w-8 rounded-sm bg-cream-300/20 border border-cream-300/30 flex items-center justify-center shrink-0">
               {logoUrl ? (
                 <img src={logoUrl} alt={venueName ?? "Venue"} className="h-6 w-6 object-contain" />
               ) : (
-                <span className="text-white font-display font-bold text-body-s">
-                  {venueName ? venueName[0].toUpperCase() : "V"}
-                </span>
+                <span className="text-cream-300 font-display font-bold text-body-s">Co</span>
               )}
             </div>
-            <span className="font-display font-semibold text-body-m text-cream-50">
-              {venueName ?? "VenueKit OS"}
+            <span className="font-display font-semibold text-body-m text-cream-300">
+              Your Company Name & Logo
             </span>
           </Link>
           <button className="lg:hidden text-cream-300 hover:text-cream-50" onClick={() => setSidebarOpen(false)}>
@@ -154,7 +152,7 @@ export function AdminShell({ children, venueName, logoUrl }: AdminShellProps) {
 
             {/* Venue switcher */}
             <button className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-sm bg-cream-200 text-body-s text-ink hover:bg-cream-300 transition-colors">
-              WonderPlay
+              {venueName ?? "Venue 1"}
               <ChevronDown className="h-4 w-4 text-ink-secondary" />
             </button>
           </div>

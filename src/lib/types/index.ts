@@ -323,7 +323,40 @@ export interface CheckIn {
   wristbandsPrinted: boolean;
 }
 
-// POS & Inventory
+// Inventory Management System (new ledger-based types)
+export type {
+  ItemType,
+  LocationType,
+  LedgerEventType,
+  LedgerReferenceType,
+  ReservationStatus,
+  POStatus,
+  CountSessionStatus,
+  CountMode,
+  VarianceReason,
+  AlertType,
+  AlertSeverity,
+  CountFrequency,
+  ItemCategory,
+  UnitOfMeasure,
+  InventoryLocation,
+  Vendor,
+  VendorItem,
+  InventoryItem,
+  LedgerEntry,
+  InventoryBalance,
+  InventoryReservation,
+  PurchaseOrder,
+  PurchaseOrderLine,
+  Receipt,
+  ReceiptLine,
+  CountSession,
+  CountLine,
+  InventoryAlert,
+  InventoryOverviewKPIs,
+} from "@/lib/inventory/types";
+
+// POS & Inventory (legacy)
 export type ProductCategory = 'Socks' | 'Food & Beverage' | 'Merchandise' | 'Party Supplies' | 'Operational';
 export type StockTransactionType = 'received' | 'sold' | 'adjustment' | 'return' | 'damaged' | 'initial';
 

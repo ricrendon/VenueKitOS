@@ -2,108 +2,78 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Card, CardContent, Badge, MetricCard, Button } from "@/components/ui";
-import { Package, DollarSign, AlertTriangle, XCircle, Loader2, Plus, Download } from "lucide-react";
-import { downloadCsv } from "@/lib/utils";
-import { AddItemModal } from "@/components/admin/inventory/add-item-modal";
-import { InventoryFilters } from "@/components/admin/inventory/inventory-filters";
+import { Card, CardContent, MetricCard, Button, Badge } from "@/components/ui";
+import {
+  DollarSign, AlertTriangle, XCircle, ShoppingCart, CalendarClock,
+  Trash2, Plus, ArrowDownToLine, ClipboardCheck, Settings, Package, Loader2,
+} from "lucide-react";
+import { EVENT_TYPE_LABELS, ALERT_SEVERITY_VARIANT } from "@/lib/inventory/constants";
 
-interface InventoryItem {
+interface OverviewKPIs {
+  totalInventoryValue: number;
+  lowStockItems: number;
+  outOfStockItems: number;
+  openPurchaseOrders: number;
+  reservedForBookings: number;
+  wasteThisMonth: number;
+}
+
+interface LowStockItem {
   id: string;
   name: string;
   sku: string | null;
   category: string;
-  description: string | null;
-  price: number;
-  cost: number | null;
   quantityOnHand: number;
   reorderLevel: number;
-  unit: string;
-  supplier: string | null;
-  active: boolean;
-  updatedAt: string;
 }
 
-interface KPIs {
-  totalItems: number;
-  lowStock: number;
-  totalValue: number;
-  outOfStock: number;
+interface ActivityItem {
+  id: string;
+  itemId: string;
+  itemName: string;
+  itemSku: string | null;
+  eventType: string;
+  quantityDelta: number;
+  notes: string | null;
+  occurredAt: string;
 }
 
-const CATEGORY_VARIANT: Record<string, "sage" | "mustard" | "dusty" | "terracotta" | "default"> = {
-  "Socks": "sage",
-  "Food & Beverage": "mustard",
-  "Merchandise": "dusty",
-  "Party Supplies": "terracotta",
-  "Operational": "default",
-};
-
-function stockBadge(qty: number, reorder: number, active: boolean) {
-  if (!active) return { label: "Inactive", variant: "default" as const };
-  if (qty === 0) return { label: "Out of Stock", variant: "error" as const };
-  if (reorder > 0 && qty <= reorder) return { label: "Low Stock", variant: "warning" as const };
-  return { label: "In Stock", variant: "success" as const };
+interface Alert {
+  id: string;
+  item_id: string;
+  alert_type: string;
+  message: string;
+  severity: string;
+  created_at: string;
 }
 
-export default function InventoryPage() {
-  const [items, setItems] = useState<InventoryItem[]>([]);
-  const [kpis, setKpis] = useState<KPIs | null>(null);
+export default function InventoryOverviewPage() {
+  const [kpis, setKpis] = useState<OverviewKPIs | null>(null);
+  const [lowStock, setLowStock] = useState<LowStockItem[]>([]);
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("");
-  const [stockStatus, setStockStatus] = useState("");
-  const [showAddModal, setShowAddModal] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
-      const params = new URLSearchParams();
-      if (search) params.set("search", search);
-      if (category) params.set("category", category);
-      if (stockStatus) params.set("stockStatus", stockStatus);
-
-      const res = await fetch(`/api/admin/inventory?${params}`);
+      const res = await fetch("/api/admin/inventory/overview");
       const json = await res.json();
-      setItems(json.items || []);
       setKpis(json.kpis || null);
+      setLowStock(json.lowStockAlerts || []);
+      setActivity(json.recentActivity || []);
+      setAlerts(json.alerts || []);
     } catch {
       // silently fail
     } finally {
       setLoading(false);
     }
-  }, [search, category, stockStatus]);
+  }, []);
 
   useEffect(() => {
-    setLoading(true);
-    const timeout = setTimeout(fetchData, search ? 300 : 0);
-    return () => clearTimeout(timeout);
-  }, [fetchData, search]);
+    fetchData();
+  }, [fetchData]);
 
-  const handleDownload = () => {
-    const headers = [
-      "SKU", "Name", "Category", "Price", "Cost",
-      "Quantity", "Reorder Level", "Unit", "Supplier", "Status",
-    ];
-    const rows = items.map((item) => {
-      const badge = stockBadge(item.quantityOnHand, item.reorderLevel, item.active);
-      return [
-        item.sku || "",
-        item.name,
-        item.category,
-        `$${item.price.toFixed(2)}`,
-        item.cost != null ? `$${item.cost.toFixed(2)}` : "",
-        item.quantityOnHand,
-        item.reorderLevel,
-        item.unit,
-        item.supplier || "",
-        badge.label,
-      ];
-    });
-    const today = new Date().toISOString().split("T")[0];
-    downloadCsv(`inventory-report-${today}.csv`, headers, rows);
-  };
-
-  if (loading && !items.length) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-terracotta" />
@@ -117,164 +87,207 @@ export default function InventoryPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display text-h1 text-ink">Inventory</h1>
-          <p className="text-body-m text-ink-secondary">Track stock levels, costs, and suppliers.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={handleDownload} disabled={items.length === 0}>
-            <Download className="h-4 w-4 mr-1.5" />
-            Download Report
-          </Button>
-          <Button onClick={() => setShowAddModal(true)}>
-            <Plus className="h-4 w-4 mr-1.5" />
-            Add Item
-          </Button>
+          <p className="text-body-m text-ink-secondary">Operations dashboard — track stock, orders, and alerts.</p>
         </div>
       </div>
 
-      {/* KPIs */}
+      {/* KPI Cards */}
       {kpis && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard
-            title="Total Items"
-            value={String(kpis.totalItems)}
-            change="Active products"
-            changeType="neutral"
-            icon={<Package className="h-5 w-5" />}
-          />
-          <MetricCard
-            title="Low Stock"
-            value={String(kpis.lowStock)}
-            change="Below reorder level"
-            changeType={kpis.lowStock > 0 ? "negative" : "positive"}
-            icon={<AlertTriangle className="h-5 w-5" />}
-          />
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           <MetricCard
             title="Inventory Value"
-            value={`$${kpis.totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
+            value={`$${kpis.totalInventoryValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
             change="At cost"
             changeType="neutral"
             icon={<DollarSign className="h-5 w-5" />}
           />
           <MetricCard
+            title="Low Stock"
+            value={String(kpis.lowStockItems)}
+            change="Below reorder"
+            changeType={kpis.lowStockItems > 0 ? "negative" : "positive"}
+            icon={<AlertTriangle className="h-5 w-5" />}
+          />
+          <MetricCard
             title="Out of Stock"
-            value={String(kpis.outOfStock)}
+            value={String(kpis.outOfStockItems)}
             change="Need restocking"
-            changeType={kpis.outOfStock > 0 ? "negative" : "positive"}
+            changeType={kpis.outOfStockItems > 0 ? "negative" : "positive"}
             icon={<XCircle className="h-5 w-5" />}
+          />
+          <MetricCard
+            title="Open POs"
+            value={String(kpis.openPurchaseOrders)}
+            change="Pending orders"
+            changeType="neutral"
+            icon={<ShoppingCart className="h-5 w-5" />}
+          />
+          <MetricCard
+            title="Reserved"
+            value={String(kpis.reservedForBookings)}
+            change="For bookings"
+            changeType="neutral"
+            icon={<CalendarClock className="h-5 w-5" />}
+          />
+          <MetricCard
+            title="Waste (Month)"
+            value={`$${kpis.wasteThisMonth.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
+            change="This month"
+            changeType={kpis.wasteThisMonth > 0 ? "negative" : "neutral"}
+            icon={<Trash2 className="h-5 w-5" />}
           />
         </div>
       )}
 
-      {/* Filters */}
-      <InventoryFilters
-        search={search}
-        category={category}
-        stockStatus={stockStatus}
-        onSearchChange={setSearch}
-        onCategoryChange={setCategory}
-        onStockStatusChange={setStockStatus}
-      />
+      {/* Quick Actions */}
+      <div className="flex flex-wrap gap-2">
+        <Link href="/admin/inventory/items/new">
+          <Button size="sm">
+            <Plus className="h-4 w-4 mr-1.5" />
+            Add Item
+          </Button>
+        </Link>
+        <Link href="/admin/inventory/receiving">
+          <Button variant="secondary" size="sm">
+            <ArrowDownToLine className="h-4 w-4 mr-1.5" />
+            Receive Shipment
+          </Button>
+        </Link>
+        <Link href="/admin/inventory/purchase-orders">
+          <Button variant="secondary" size="sm">
+            <ShoppingCart className="h-4 w-4 mr-1.5" />
+            New Purchase Order
+          </Button>
+        </Link>
+        <Link href="/admin/inventory/counts">
+          <Button variant="secondary" size="sm">
+            <ClipboardCheck className="h-4 w-4 mr-1.5" />
+            Start Count
+          </Button>
+        </Link>
+      </div>
 
-      {/* Table */}
-      {items.length > 0 ? (
+      {/* Three-column layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left: Low Stock Alerts */}
         <Card>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-cream-300">
-                    <th className="text-left text-label text-ink-secondary py-3 font-medium">SKU</th>
-                    <th className="text-left text-label text-ink-secondary py-3 font-medium">Name</th>
-                    <th className="text-left text-label text-ink-secondary py-3 font-medium">Category</th>
-                    <th className="text-right text-label text-ink-secondary py-3 font-medium">Price</th>
-                    <th className="text-right text-label text-ink-secondary py-3 font-medium">Cost</th>
-                    <th className="text-right text-label text-ink-secondary py-3 font-medium">Stock</th>
-                    <th className="text-left text-label text-ink-secondary py-3 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item) => {
-                    const badge = stockBadge(item.quantityOnHand, item.reorderLevel, item.active);
-                    return (
-                      <tr key={item.id} className="border-b border-cream-200 hover:bg-cream-50 transition-colors">
-                        <td className="py-3">
-                          <Link
-                            href={`/admin/inventory/${item.id}`}
-                            className="font-mono text-body-s text-terracotta font-medium hover:underline"
-                          >
-                            {item.sku || "—"}
-                          </Link>
-                        </td>
-                        <td className="py-3">
-                          <Link href={`/admin/inventory/${item.id}`} className="hover:underline">
-                            <p className="text-body-s text-ink font-medium">{item.name}</p>
-                            {item.description && (
-                              <p className="text-caption text-ink-secondary truncate max-w-[200px]">
-                                {item.description}
-                              </p>
-                            )}
-                          </Link>
-                        </td>
-                        <td className="py-3">
-                          <Badge variant={CATEGORY_VARIANT[item.category] || "default"} className="text-[11px]">
-                            {item.category}
-                          </Badge>
-                        </td>
-                        <td className="py-3 text-body-s text-ink text-right">
-                          ${item.price.toFixed(2)}
-                        </td>
-                        <td className="py-3 text-body-s text-ink-secondary text-right">
-                          {item.cost != null ? `$${item.cost.toFixed(2)}` : "—"}
-                        </td>
-                        <td className="py-3 text-right">
-                          <span
-                            className={`text-body-s font-medium ${
-                              item.quantityOnHand === 0
-                                ? "text-error"
-                                : item.reorderLevel > 0 && item.quantityOnHand <= item.reorderLevel
-                                  ? "text-mustard"
-                                  : "text-ink"
-                            }`}
-                          >
-                            {item.quantityOnHand}
-                          </span>
-                          <span className="text-caption text-ink-secondary ml-1">{item.unit}</span>
-                        </td>
-                        <td className="py-3">
-                          <Badge variant={badge.variant} className="text-[11px]">
-                            {badge.label}
-                          </Badge>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-body-m font-medium text-ink">Low Stock Items</h3>
+              <Link href="/admin/inventory/items?stockStatus=low" className="text-caption text-terracotta hover:underline">
+                View all
+              </Link>
             </div>
+            {lowStock.length === 0 ? (
+              <p className="text-body-s text-ink-secondary text-center py-6">All stock levels healthy</p>
+            ) : (
+              <div className="space-y-3">
+                {lowStock.slice(0, 8).map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/admin/inventory/items/${item.id}`}
+                    className="flex items-center justify-between py-2 hover:bg-cream-100 -mx-2 px-2 rounded-sm transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-body-s text-ink font-medium truncate">{item.name}</p>
+                      <p className="text-caption text-ink-secondary">{item.category}</p>
+                    </div>
+                    <div className="text-right shrink-0 ml-3">
+                      <p className="text-body-s font-medium text-mustard">{item.quantityOnHand}</p>
+                      <p className="text-caption text-ink-secondary">/ {item.reorderLevel}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
-      ) : (
-        <Card>
-          <CardContent className="text-center py-12">
-            <Package className="h-10 w-10 text-ink-secondary mx-auto mb-4" />
-            <h3 className="font-display text-h4 text-ink mb-2">No inventory items yet</h3>
-            <p className="text-body-s text-ink-secondary mb-4">
-              Add your first product to start tracking inventory.
-            </p>
-            <Button onClick={() => setShowAddModal(true)}>
-              <Plus className="h-4 w-4 mr-1.5" />
-              Add Item
-            </Button>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Add Modal */}
-      <AddItemModal
-        open={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSuccess={fetchData}
-      />
+        {/* Center: Recent Activity */}
+        <Card>
+          <CardContent>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-body-m font-medium text-ink">Recent Activity</h3>
+              <Link href="/admin/inventory/transactions" className="text-caption text-terracotta hover:underline">
+                View all
+              </Link>
+            </div>
+            {activity.length === 0 ? (
+              <p className="text-body-s text-ink-secondary text-center py-6">No recent activity</p>
+            ) : (
+              <div className="space-y-3">
+                {activity.slice(0, 10).map((a) => (
+                  <div key={a.id} className="flex items-start gap-3">
+                    <div className={`flex items-center justify-center h-8 w-8 rounded-full shrink-0 ${
+                      a.quantityDelta > 0 ? "bg-sage/10 text-sage" : "bg-terracotta/10 text-terracotta"
+                    }`}>
+                      <Package className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-body-s text-ink">
+                        <span className="font-medium">{a.itemName}</span>
+                        {" "}
+                        <span className={a.quantityDelta > 0 ? "text-sage" : "text-terracotta"}>
+                          {a.quantityDelta > 0 ? "+" : ""}{a.quantityDelta}
+                        </span>
+                      </p>
+                      <p className="text-caption text-ink-secondary">
+                        {EVENT_TYPE_LABELS[a.eventType] || a.eventType}
+                        {a.notes ? ` — ${a.notes}` : ""}
+                      </p>
+                      <p className="text-caption text-ink-secondary/60">
+                        {new Date(a.occurredAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Right: Active Alerts */}
+        <Card>
+          <CardContent>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-body-m font-medium text-ink">Alerts</h3>
+              <Link href="/admin/inventory/alerts" className="text-caption text-terracotta hover:underline">
+                View all
+              </Link>
+            </div>
+            {alerts.length === 0 ? (
+              <p className="text-body-s text-ink-secondary text-center py-6">No active alerts</p>
+            ) : (
+              <div className="space-y-3">
+                {alerts.slice(0, 8).map((alert) => (
+                  <div key={alert.id} className="flex items-start gap-3 py-1">
+                    <Badge
+                      variant={ALERT_SEVERITY_VARIANT[alert.severity] || "default"}
+                      className="text-[10px] shrink-0 mt-0.5"
+                    >
+                      {alert.severity}
+                    </Badge>
+                    <div className="min-w-0">
+                      <p className="text-body-s text-ink">{alert.message}</p>
+                      <p className="text-caption text-ink-secondary/60">
+                        {new Date(alert.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
