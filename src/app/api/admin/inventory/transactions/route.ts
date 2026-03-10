@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get item names for all referenced items
-    const itemIds = [...new Set((entries || []).map((e) => e.item_id).filter(Boolean))];
+    const itemIds = Array.from(new Set((entries || []).map((e) => e.item_id).filter(Boolean)));
     let itemMap = new Map<string, { name: string; sku: string | null }>();
     if (itemIds.length > 0) {
       const { data: items } = await supabase
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get location names
-    const locationIds = [...new Set((entries || []).map((e) => e.location_id).filter(Boolean))];
+    const locationIds = Array.from(new Set((entries || []).map((e) => e.location_id).filter(Boolean)));
     let locationMap = new Map<string, string>();
     if (locationIds.length > 0) {
       const { data: locations } = await supabase
@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
       const { data: legacy } = await legacyQuery;
 
       // Get item names for legacy
-      const legacyItemIds = [...new Set((legacy || []).map((t) => t.product_id).filter(Boolean))];
+      const legacyItemIds = Array.from(new Set((legacy || []).map((t) => t.product_id).filter(Boolean)));
       if (legacyItemIds.length > 0) {
         const { data: items } = await supabase
           .from("products")

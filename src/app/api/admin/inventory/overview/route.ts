@@ -100,7 +100,7 @@ export async function GET() {
     }));
 
     // Map recent activity with item names
-    const itemIds = [...new Set((ledgerRes.data || []).map((e) => e.item_id))];
+    const itemIds = Array.from(new Set((ledgerRes.data || []).map((e) => e.item_id)));
     const { data: itemNames } = await supabase
       .from("products")
       .select("id, name, sku")

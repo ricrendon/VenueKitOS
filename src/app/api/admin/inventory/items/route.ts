@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch vendor names for display
-    const vendorIds = [...new Set(items.map((i) => i.preferredVendorId).filter(Boolean))];
+    const vendorIds = Array.from(new Set(items.map((i) => i.preferredVendorId).filter(Boolean)));
     if (vendorIds.length > 0) {
       const { data: vendors } = await supabase
         .from("vendors")
