@@ -157,18 +157,19 @@ export default function TransactionsPage() {
 
   const handleExport = () => {
     if (transactions.length === 0) return;
-    const rows = transactions.map((tx) => ({
-      Date: format(new Date(tx.occurredAt), "yyyy-MM-dd HH:mm"),
-      Item: tx.itemName,
-      SKU: tx.itemSku || "",
-      Type: EVENT_TYPE_LABELS[tx.eventType] || tx.eventType,
-      "Qty Change": tx.quantityDelta,
-      "Unit Cost": tx.unitCost != null ? Number(tx.unitCost).toFixed(2) : "",
-      Location: tx.locationName || "",
-      Source: tx.referenceType || "",
-      Notes: tx.notes || "",
-    }));
-    downloadCsv(rows, `inventory-transactions-${format(new Date(), "yyyy-MM-dd")}`);
+    const headers = ["Date", "Item", "SKU", "Type", "Qty Change", "Unit Cost", "Location", "Source", "Notes"];
+    const rows = transactions.map((tx) => [
+      format(new Date(tx.occurredAt), "yyyy-MM-dd HH:mm"),
+      tx.itemName,
+      tx.itemSku || "",
+      EVENT_TYPE_LABELS[tx.eventType] || tx.eventType,
+      tx.quantityDelta,
+      tx.unitCost != null ? Number(tx.unitCost).toFixed(2) : "",
+      tx.locationName || "",
+      tx.referenceType || "",
+      tx.notes || "",
+    ]);
+    downloadCsv(`inventory-transactions-${format(new Date(), "yyyy-MM-dd")}.csv`, headers, rows);
   };
 
   return (
