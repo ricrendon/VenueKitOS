@@ -22,6 +22,19 @@ export default function RegisterPage() {
   const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+    let formatted = digits;
+    if (digits.length > 6) {
+      formatted = `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+    } else if (digits.length > 3) {
+      formatted = `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    } else if (digits.length > 0) {
+      formatted = `(${digits}`;
+    }
+    setForm((f) => ({ ...f, phone: formatted }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -33,50 +46,43 @@ export default function RegisterPage() {
       return;
     }
 
-    const supabase = createClient();
-
-    // 1) Sign up via Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
-      options: {
-        data: {
-          first_name: form.firstName,
-          last_name: form.lastName,
-        },
-      },
+    // 1) Create auth user + profile via server-side API (uses service role
+    //    with email_confirm: true — no confirmation email required)
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone,
+        password: form.password,
+      }),
     });
 
-    if (authError) {
-      setError(authError.message);
+    const body = await res.json();
+
+    if (!res.ok) {
+      setError(body.error || "Failed to create account.");
       setLoading(false);
       return;
     }
 
-    // 2) Create parent_accounts row via API route
-    if (authData.user) {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          authUserId: authData.user.id,
-          firstName: form.firstName,
-          lastName: form.lastName,
-          email: form.email,
-          phone: form.phone,
-        }),
-      });
+    // 2) Sign in immediately — user is already confirmed
+    const supabase = createClient();
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: form.email,
+      password: form.password,
+    });
 
-      if (!res.ok) {
-        const body = await res.json();
-        setError(body.error || "Failed to create account profile.");
-        setLoading(false);
-        return;
-      }
+    if (signInError) {
+      setError(signInError.message);
+      setLoading(false);
+      return;
     }
 
-    // 3) Redirect to portal
-    router.push("/portal");
+    // 3) Redirect to portal dashboard
+    router.push("/portal/dashboard");
   };
 
   return (
@@ -109,7 +115,7 @@ export default function RegisterPage() {
               <Input label="Last name" placeholder="Smith" value={form.lastName} onChange={update("lastName")} required />
             </div>
             <Input label="Email" type="email" placeholder="jane@example.com" value={form.email} onChange={update("email")} required />
-            <Input label="Phone" type="tel" placeholder="(555) 123-4567" value={form.phone} onChange={update("phone")} />
+            <Input label="Phone" type="tel" placeholder="(555) 123-4567" value={form.phone} onChange={handlePhoneChange} maxLength={14} />
             <Input
               label="Password"
               type="password"

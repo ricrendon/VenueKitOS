@@ -52,8 +52,10 @@ export default function LoginPage() {
 
       if (roleRes.ok) {
         const { redirect } = await roleRes.json();
-        // Hard redirect ensures the browser sends fresh auth cookies
-        window.location.href = redirect || "/admin/dashboard";
+        // Hard redirect ensures the browser sends fresh auth cookies.
+        // Never send an authenticated user to "/" (marketing homepage).
+        const dest = redirect && redirect !== "/" ? redirect : "/portal/dashboard";
+        window.location.href = dest;
         return;
       }
     } catch {
@@ -61,7 +63,7 @@ export default function LoginPage() {
     }
 
     // Fallback — hard redirect to ensure cookies are sent
-    window.location.href = "/admin/dashboard";
+    window.location.href = "/portal/dashboard";
   };
 
   return (
