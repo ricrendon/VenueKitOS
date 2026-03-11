@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { postLedgerEntry } from "@/lib/inventory/ledger";
 import type { LedgerEventType } from "@/lib/inventory/types";
+import { isDemoMode } from "@/lib/mock/demo-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,7 @@ const ADJUSTMENT_EVENT_TYPES: LedgerEventType[] = [
  * - reason?: string (appended to notes)
  */
 export async function POST(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json({ success: true });
   try {
     const body = await request.json();
     const { itemId, eventType, quantity, direction, locationId, unitCost, notes, reason } = body;

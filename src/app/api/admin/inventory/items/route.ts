@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { postLedgerEntry } from "@/lib/inventory/ledger";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockInventoryItems } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +48,7 @@ function mapItem(p: Record<string, unknown>, balance?: Record<string, unknown> |
 
 // GET — list items with balances, search, and filters
 export async function GET(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json(mockInventoryItems());
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search");
@@ -167,6 +170,7 @@ export async function GET(request: NextRequest) {
 
 // POST — create a new inventory item
 export async function POST(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json({ success: true, item: { id: "demo-item-new" } });
   try {
     const body = await request.json();
     const {

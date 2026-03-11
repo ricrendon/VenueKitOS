@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockMenu } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +26,7 @@ function mapMenuItem(row: any) {
 
 // GET — return all menu items, optionally grouped by category
 export async function GET() {
+  if (isDemoMode()) return NextResponse.json(mockMenu);
   try {
     const supabase = createAdminClient();
 
@@ -58,6 +61,7 @@ export async function GET() {
 
 // POST — create a new menu item
 export async function POST(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json({ success: true, item: { id: "demo-menu-new" } });
   try {
     const body = await request.json();
     const {

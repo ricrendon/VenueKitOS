@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockInventoryVendors } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +12,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (isDemoMode()) return NextResponse.json({ vendor: mockInventoryVendors.vendors[0], items: [], purchaseOrders: [] });
   try {
     const { id } = await params;
     const supabase = createAdminClient();
@@ -86,6 +89,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (isDemoMode()) return NextResponse.json({ success: true });
   try {
     const { id } = await params;
     const body = await request.json();

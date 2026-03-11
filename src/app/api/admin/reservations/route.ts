@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLocalToday, formatStoredTime } from "@/lib/utils/timezone";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockReservations } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +10,7 @@ const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
 const VENUE_TZ = "America/Chicago";
 
 export async function GET(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json(mockReservations());
   try {
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);

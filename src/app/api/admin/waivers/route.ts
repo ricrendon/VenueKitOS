@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockWaivers } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
 const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
 
 export async function GET() {
+  if (isDemoMode()) return NextResponse.json(mockWaivers);
   try {
     const supabase = createAdminClient();
 

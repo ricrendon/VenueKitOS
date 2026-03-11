@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLocalToday } from "@/lib/utils/timezone";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockTimeClock } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,7 @@ function computeHours(clockIn: string, clockOut: string | null, breakMinutes: nu
 }
 
 export async function GET(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json(mockTimeClock());
   try {
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
@@ -186,6 +189,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json({ success: true, entryId: "demo-entry-001" });
   try {
     const supabase = createAdminClient();
     const body = await request.json();

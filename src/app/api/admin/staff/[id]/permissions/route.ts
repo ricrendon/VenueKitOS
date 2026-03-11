@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getDefaultPages, ADMIN_PAGES } from "@/lib/permissions";
 import type { PageKey } from "@/lib/types";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockPermissions } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +12,7 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (isDemoMode()) return NextResponse.json(mockPermissions);
   try {
     const { id: staffId } = await params;
     const supabase = createAdminClient();
@@ -75,6 +78,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (isDemoMode()) return NextResponse.json({ success: true, overridesStored: 0 });
   try {
     const { id: staffId } = await params;
     const body = await request.json();
@@ -139,6 +143,7 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (isDemoMode()) return NextResponse.json({ success: true });
   try {
     const { id: staffId } = await params;
     const supabase = createAdminClient();

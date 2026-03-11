@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockIncidents } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +10,7 @@ const STAFF_ID = "a1b2c3d4-0002-4000-8000-000000000001"; // Marcus (logged-in us
 
 // GET — list incidents with KPIs and chart data
 export async function GET(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json(mockIncidents);
   try {
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
@@ -120,6 +123,7 @@ export async function GET(request: NextRequest) {
 
 // POST — create a new incident
 export async function POST(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json({ success: true, incident: { id: "demo-incident" } });
   try {
     const body = await request.json();
     const { type, title, description, severity, affected_area } = body;

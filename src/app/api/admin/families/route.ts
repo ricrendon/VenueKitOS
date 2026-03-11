@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockFamilies } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  if (isDemoMode()) return NextResponse.json(mockFamilies);
   try {
     const supabase = createAdminClient();
 

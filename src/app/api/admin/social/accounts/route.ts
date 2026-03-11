@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { validateToken } from "@/lib/social/meta";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockSocialAccounts } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +10,7 @@ const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
 
 // GET — list connected social accounts
 export async function GET() {
+  if (isDemoMode()) return NextResponse.json(mockSocialAccounts);
   try {
     const supabase = createAdminClient();
 
@@ -31,6 +34,7 @@ export async function GET() {
 
 // POST — connect a new social account
 export async function POST(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json({ success: true, account: { id: "demo-account" } });
   try {
     const body = await request.json();
     const { platform, accessToken } = body;
@@ -86,6 +90,7 @@ export async function POST(request: NextRequest) {
 
 // DELETE — disconnect an account
 export async function DELETE(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json({ success: true });
   try {
     const { searchParams } = new URL(request.url);
     const accountId = searchParams.get("id");

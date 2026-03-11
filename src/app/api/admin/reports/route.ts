@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLocalToday } from "@/lib/utils/timezone";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockReports } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
@@ -563,6 +565,10 @@ async function getCustomersData(supabase: any, range: ReturnType<typeof getDateR
 }
 
 export async function GET(request: NextRequest) {
+  if (isDemoMode()) {
+    const { searchParams } = new URL(request.url);
+    return NextResponse.json(mockReports(searchParams.get("tab") || "overview", searchParams.get("period") || "30d"));
+  }
   try {
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);

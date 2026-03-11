@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoMode } from "@/lib/mock/demo-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (isDemoMode()) return NextResponse.json({ success: true });
   try {
     const { id } = await params;
     const supabase = createAdminClient();
@@ -61,6 +63,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (isDemoMode()) return NextResponse.json({ success: true });
   try {
     const { id } = await params;
     const supabase = createAdminClient();

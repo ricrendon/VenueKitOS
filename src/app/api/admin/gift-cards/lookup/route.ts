@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockGiftCards } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
@@ -7,6 +9,7 @@ const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
 
 // GET — lookup gift card by code for redemption
 export async function GET(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json({ giftCard: mockGiftCards.giftCards[0] });
   try {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code")?.trim().toUpperCase();

@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockVenue } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
@@ -7,6 +9,7 @@ const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
 
 /** GET — return full venue record */
 export async function GET() {
+  if (isDemoMode()) return NextResponse.json(mockVenue);
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
@@ -29,6 +32,7 @@ export async function GET() {
 
 /** PATCH — partial update of venue fields (merges JSONB columns) */
 export async function PATCH(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json(mockVenue);
   try {
     const body = await request.json();
     const supabase = createAdminClient();

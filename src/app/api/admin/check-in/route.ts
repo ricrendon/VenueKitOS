@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLocalToday, formatStoredTime } from "@/lib/utils/timezone";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockCheckIn } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +11,7 @@ const VENUE_TZ = "America/Chicago";
 const STAFF_ID = "a1b2c3d4-0002-4000-8000-000000000001"; // Marcus (default)
 
 export async function GET(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json(mockCheckIn());
   try {
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
@@ -94,6 +97,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json({ success: true, checkInId: "demo-checkin-001" });
   try {
     const supabase = createAdminClient();
     const body = await request.json();

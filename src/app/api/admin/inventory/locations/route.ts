@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockInventoryLocations } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
@@ -7,6 +9,7 @@ const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
 
 // GET — list locations with item counts
 export async function GET() {
+  if (isDemoMode()) return NextResponse.json(mockInventoryLocations);
   try {
     const supabase = createAdminClient();
 

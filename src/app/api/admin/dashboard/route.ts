@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLocalToday, formatStoredTime } from "@/lib/utils/timezone";
 import { subDays, format } from "date-fns";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockDashboard } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +22,10 @@ function pctChange(current: number, previous: number): number {
 }
 
 export async function GET(request: NextRequest) {
+  if (isDemoMode()) {
+    const period = new URL(request.url).searchParams.get("period") || "30d";
+    return NextResponse.json(mockDashboard(period));
+  }
   try {
     const supabase = createAdminClient();
     const today = getLocalToday(VENUE_TZ);

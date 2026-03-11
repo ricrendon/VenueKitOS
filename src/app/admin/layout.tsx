@@ -1,8 +1,19 @@
 import { AdminShell } from "@/components/layout/admin-shell";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { DEMO_VENUE_NAME } from "@/lib/mock/data";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  // Demo mode: skip all Supabase lookups
+  if (isDemoMode()) {
+    return (
+      <AdminShell venueName={DEMO_VENUE_NAME} logoUrl={null}>
+        {children}
+      </AdminShell>
+    );
+  }
+
   let venueName: string | null = null;
   let logoUrl: string | null = null;
 
@@ -13,7 +24,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     if (user) {
       const admin = createAdminClient();
 
-      // Look up the staff member's venue
       const { data: staffUser } = await admin
         .from("staff_users")
         .select("venue_id")

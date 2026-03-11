@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockGiftCards } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,7 @@ function generateGiftCardCode(): string {
 
 // GET — list gift cards with KPIs, search, and status filter
 export async function GET(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json(mockGiftCards);
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
@@ -90,6 +93,7 @@ export async function GET(request: NextRequest) {
 
 // POST — issue a new gift card
 export async function POST(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json({ success: true, giftCard: { id: "gc-demo", code: "GC-DEMO01", initialValue: 50, currentBalance: 50, status: "active", purchaserName: "Demo User", purchaserEmail: "demo@example.com", recipientName: null, recipientEmail: null, createdAt: new Date().toISOString() } });
   try {
     const body = await request.json();
     const {

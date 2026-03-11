@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockStaff } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +17,7 @@ const VALID_ROLES = [
 
 // GET — list all staff members with KPIs
 export async function GET(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json(mockStaff);
   try {
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
@@ -79,6 +82,7 @@ export async function GET(request: NextRequest) {
 
 // POST — create a new staff member with Supabase auth user
 export async function POST(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json({ success: true, staff: { id: "demo-new" }, temporaryPassword: "Demo@1234" });
   try {
     const body = await request.json();
     const { first_name, last_name, email, phone, role } = body;

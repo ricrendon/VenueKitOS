@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLocalToday } from "@/lib/utils/timezone";
+import { isDemoMode } from "@/lib/mock/demo-mode";
 import {
   getInstagramProfile,
   getInstagramInsights,
@@ -14,6 +15,7 @@ const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
 const VENUE_TZ = "America/Chicago";
 
 export async function POST(request: NextRequest) {
+  if (isDemoMode()) return NextResponse.json({ success: true, message: "Demo mode: sync simulated" });
   try {
     const body = await request.json();
     const { accountId } = body;

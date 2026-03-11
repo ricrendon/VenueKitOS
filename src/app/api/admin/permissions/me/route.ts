@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStaffPermissions } from "@/lib/auth/get-staff-permissions";
 import { ALL_PAGE_KEYS, isFullAccessRole } from "@/lib/permissions";
+import { isDemoMode } from "@/lib/mock/demo-mode";
+import { mockPermissions } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
 const STAFF_ID = "a1b2c3d4-0002-4000-8000-000000000001";
 
 export async function GET() {
+  if (isDemoMode()) return NextResponse.json(mockPermissions);
   try {
     const supabase = createAdminClient();
 
