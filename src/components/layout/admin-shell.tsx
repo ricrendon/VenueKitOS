@@ -73,11 +73,13 @@ export function AdminShell({ children, venueName, logoUrl }: AdminShellProps) {
               {logoUrl ? (
                 <img src={logoUrl} alt={venueName ?? "Venue"} className="h-6 w-6 object-contain" />
               ) : (
-                <span className="text-cream-300 font-display font-bold text-body-s">Co</span>
+                <span className="text-cream-300 font-display font-bold text-body-s">
+                  {venueName ? venueName.slice(0, 2).toUpperCase() : "VK"}
+                </span>
               )}
             </div>
             <span className="font-display font-semibold text-body-m text-cream-300">
-              Company Logo
+              {venueName ?? "VenueKit OS"}
             </span>
           </Link>
           <button className="lg:hidden text-cream-300 hover:text-cream-50" onClick={() => setSidebarOpen(false)}>
