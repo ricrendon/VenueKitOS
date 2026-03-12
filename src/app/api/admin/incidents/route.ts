@@ -2,16 +2,16 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoMode } from "@/lib/mock/demo-mode";
 import { mockIncidents } from "@/lib/mock/data";
+import { getVenueId } from "@/lib/utils/venue";
+import { getCurrentStaff } from "@/lib/auth/get-current-staff";
 
 export const dynamic = "force-dynamic";
-
-const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
-const STAFF_ID = "a1b2c3d4-0002-4000-8000-000000000001"; // Marcus (logged-in user)
 
 // GET — list incidents with KPIs and chart data
 export async function GET(request: NextRequest) {
   if (isDemoMode()) return NextResponse.json(mockIncidents);
   try {
+    const venueId = await getVenueId();
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
 
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from("incidents")
       .select("*")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .order("created_at", { ascending: false });
 
     if (statusFilter && statusFilter !== "all") {
@@ -125,6 +125,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   if (isDemoMode()) return NextResponse.json({ success: true, incident: { id: "demo-incident" } });
   try {
+    const staff = await getCurrentStaff();
+    if (!staff) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const venueId = await getVenueId();
     const body = await request.json();
     const { type, title, description, severity, affected_area } = body;
 
@@ -137,8 +143,8 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from("incidents")
       .insert({
-        venue_id: VENUE_ID,
-        reported_by: STAFF_ID,
+        venue_id: venueId,
+        reported_by: staff.id,
         type,
         title,
         description: description || null,

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getStaffPermissions } from "@/lib/auth/get-staff-permissions";
 import { ALL_PAGE_KEYS, isFullAccessRole } from "@/lib/permissions";
 import { isDemoMode } from "@/lib/mock/demo-mode";
@@ -7,18 +8,26 @@ import { mockPermissions } from "@/lib/mock/data";
 
 export const dynamic = "force-dynamic";
 
-const STAFF_ID = "a1b2c3d4-0002-4000-8000-000000000001";
-
 export async function GET() {
   if (isDemoMode()) return NextResponse.json(mockPermissions);
   try {
+    // Resolve the authenticated user from session cookies
+    const serverSupabase = createServerSupabaseClient();
+    const {
+      data: { user },
+    } = await serverSupabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ allowedPages: [] }, { status: 401 });
+    }
+
     const supabase = createAdminClient();
 
-    // Get staff role
+    // Look up staff record by auth_user_id
     const { data: staff } = await supabase
       .from("staff_users")
       .select("id, role")
-      .eq("id", STAFF_ID)
+      .eq("auth_user_id", user.id)
       .single();
 
     if (!staff) {

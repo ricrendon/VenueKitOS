@@ -2,10 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoMode } from "@/lib/mock/demo-mode";
 import { mockInventoryItems } from "@/lib/mock/data";
+import { getVenueId } from "@/lib/utils/venue";
 
 export const dynamic = "force-dynamic";
-
-const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
 
 function mapProduct(p: Record<string, unknown>) {
   return {
@@ -32,6 +31,7 @@ function mapProduct(p: Record<string, unknown>) {
 export async function GET(request: NextRequest) {
   if (isDemoMode()) return NextResponse.json(mockInventoryItems());
   try {
+    const venueId = await getVenueId();
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search");
     const category = searchParams.get("category");
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from("products")
       .select("*")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .order("created_at", { ascending: false });
 
     if (category) {
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     const { data: allProducts } = await supabase
       .from("products")
       .select("id, active, quantity_on_hand, reorder_level, cost")
-      .eq("venue_id", VENUE_ID);
+      .eq("venue_id", venueId);
 
     const all = allProducts || [];
     const activeItems = all.filter((p) => p.active);
@@ -132,6 +132,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Valid price is required" }, { status: 400 });
     }
 
+    const venueId = await getVenueId();
     const supabase = createAdminClient();
 
     // Check SKU uniqueness within venue (if provided)
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
       const { data: existing } = await supabase
         .from("products")
         .select("id")
-        .eq("venue_id", VENUE_ID)
+        .eq("venue_id", venueId)
         .eq("sku", sku)
         .single();
 
@@ -151,7 +152,7 @@ export async function POST(request: NextRequest) {
     const { data: product, error: insertError } = await supabase
       .from("products")
       .insert({
-        venue_id: VENUE_ID,
+        venue_id: venueId,
         name: name.trim(),
         category,
         price,

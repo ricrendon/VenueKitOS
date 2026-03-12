@@ -3,15 +3,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getLocalToday, formatStoredTime } from "@/lib/utils/timezone";
 import { isDemoMode } from "@/lib/mock/demo-mode";
 import { mockReservations } from "@/lib/mock/data";
+import { getVenueId, getVenueTz } from "@/lib/utils/venue";
 
 export const dynamic = "force-dynamic";
-
-const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
-const VENUE_TZ = "America/Chicago";
 
 export async function GET(request: NextRequest) {
   if (isDemoMode()) return NextResponse.json(mockReservations());
   try {
+    const venueId = await getVenueId();
+    const venueTz = await getVenueTz();
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const filter = searchParams.get("filter") || "all"; // all, today, upcoming
@@ -19,11 +19,11 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from("bookings")
       .select("*, parent:parent_accounts(first_name, last_name, email)")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .order("date", { ascending: true })
       .order("start_time", { ascending: true });
 
-    const today = getLocalToday(VENUE_TZ);
+    const today = getLocalToday(venueTz);
     if (filter === "today") {
       query = query.eq("date", today);
     } else if (filter === "upcoming") {

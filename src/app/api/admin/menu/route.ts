@@ -2,10 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoMode } from "@/lib/mock/demo-mode";
 import { mockMenu } from "@/lib/mock/data";
+import { getVenueId } from "@/lib/utils/venue";
 
 export const dynamic = "force-dynamic";
-
-const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function mapMenuItem(row: any) {
@@ -28,12 +27,13 @@ function mapMenuItem(row: any) {
 export async function GET() {
   if (isDemoMode()) return NextResponse.json(mockMenu);
   try {
+    const venueId = await getVenueId();
     const supabase = createAdminClient();
 
     const { data, error } = await supabase
       .from("menu_items")
       .select("*")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .order("category")
       .order("display_order")
       .order("name");
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from("menu_items")
       .insert({
-        venue_id: VENUE_ID,
+        venue_id: venueId,
         name: name.trim(),
         description: description || null,
         price: Number(price),

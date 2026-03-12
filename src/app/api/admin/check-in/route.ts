@@ -3,26 +3,26 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getLocalToday, formatStoredTime } from "@/lib/utils/timezone";
 import { isDemoMode } from "@/lib/mock/demo-mode";
 import { mockCheckIn } from "@/lib/mock/data";
+import { getVenueId, getVenueTz } from "@/lib/utils/venue";
+import { getCurrentStaff } from "@/lib/auth/get-current-staff";
 
 export const dynamic = "force-dynamic";
-
-const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
-const VENUE_TZ = "America/Chicago";
-const STAFF_ID = "a1b2c3d4-0002-4000-8000-000000000001"; // Marcus (default)
 
 export async function GET(request: NextRequest) {
   if (isDemoMode()) return NextResponse.json(mockCheckIn());
   try {
+    const venueId = await getVenueId();
+    const venueTz = await getVenueTz();
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
-    const today = getLocalToday(VENUE_TZ);
+    const today = getLocalToday(venueTz);
 
     // Fetch today's bookings
     let query = supabase
       .from("bookings")
       .select("*, parent:parent_accounts(first_name, last_name, email, phone)")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .eq("date", today)
       .order("start_time", { ascending: true });
 
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     const { data: checkIns } = await supabase
       .from("check_ins")
       .select("booking_id, checked_in_at, child_count")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .gte("checked_in_at", `${today}T00:00:00`)
       .lte("checked_in_at", `${today}T23:59:59`);
 
@@ -99,6 +99,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   if (isDemoMode()) return NextResponse.json({ success: true, checkInId: "demo-checkin-001" });
   try {
+    const staff = await getCurrentStaff();
+    if (!staff) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const supabase = createAdminClient();
     const body = await request.json();
     const { bookingId } = body;
@@ -137,7 +142,7 @@ export async function POST(request: NextRequest) {
         venue_id: booking.venue_id,
         parent_id: booking.parent_id,
         checked_in_at: new Date().toISOString(),
-        checked_in_by: STAFF_ID,
+        checked_in_by: staff.id,
         child_count: booking.child_count || 1,
       })
       .select("id")

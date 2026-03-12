@@ -3,12 +3,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getLocalToday } from "@/lib/utils/timezone";
 import { isDemoMode } from "@/lib/mock/demo-mode";
 import { mockTimeClock } from "@/lib/mock/data";
+import { getVenueId, getVenueTz } from "@/lib/utils/venue";
+import { getCurrentStaff } from "@/lib/auth/get-current-staff";
 
 export const dynamic = "force-dynamic";
-
-const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
-const VENUE_TZ = "America/Chicago";
-const STAFF_ID = "a1b2c3d4-0002-4000-8000-000000000001"; // Marcus (default)
 
 function computeHours(clockIn: string, clockOut: string | null, breakMinutes: number): number | null {
   if (!clockOut) return null;
@@ -20,6 +18,8 @@ function computeHours(clockIn: string, clockOut: string | null, breakMinutes: nu
 export async function GET(request: NextRequest) {
   if (isDemoMode()) return NextResponse.json(mockTimeClock());
   try {
+    const venueId = await getVenueId();
+    const venueTz = await getVenueTz();
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get("startDate");
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       dayStart = `${startDate}T00:00:00`;
       dayEnd = `${endDate}T23:59:59`;
     } else {
-      const date = searchParams.get("date") || getLocalToday(VENUE_TZ);
+      const date = searchParams.get("date") || getLocalToday(venueTz);
       dayStart = `${date}T00:00:00`;
       dayEnd = `${date}T23:59:59`;
     }
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from("time_entries")
       .select("*")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .gte("clock_in", dayStart)
       .lte("clock_in", dayEnd)
       .order("clock_in", { ascending: false });
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     const { data: allStaff } = await supabase
       .from("staff_users")
       .select("id, first_name, last_name, role")
-      .eq("venue_id", VENUE_ID);
+      .eq("venue_id", venueId);
 
     const staffMap = new Map(
       (allStaff || []).map((s) => [s.id, s])
@@ -76,18 +76,18 @@ export async function GET(request: NextRequest) {
     const { data: allActive } = await supabase
       .from("time_entries")
       .select("id, staff_id, clock_in, break_minutes")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .eq("status", "active");
 
     // Fetch total active staff
     const { count: totalStaff } = await supabase
       .from("staff_users")
       .select("id", { count: "exact", head: true })
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .eq("active", true);
 
     // Fetch weekly completed entries for weekly hours KPI
-    const today = getLocalToday(VENUE_TZ);
+    const today = getLocalToday(venueTz);
     const todayDate = new Date(today + "T12:00:00");
     const dayOfWeek = todayDate.getDay(); // 0=Sun
     const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
     const { data: weekEntries } = await supabase
       .from("time_entries")
       .select("clock_in, clock_out, break_minutes")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .eq("status", "completed")
       .gte("clock_in", `${weekStart}T00:00:00`);
 
@@ -191,6 +191,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   if (isDemoMode()) return NextResponse.json({ success: true, entryId: "demo-entry-001" });
   try {
+    const currentStaff = await getCurrentStaff();
+    if (!currentStaff) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const venueId = await getVenueId();
     const supabase = createAdminClient();
     const body = await request.json();
     const { action, staffId, clockIn, clockOut, breakMinutes, notes } = body;
@@ -210,7 +216,7 @@ export async function POST(request: NextRequest) {
           .from("time_entries")
           .select("id")
           .eq("staff_id", staffId)
-          .eq("venue_id", VENUE_ID)
+          .eq("venue_id", venueId)
           .eq("status", "active")
           .single();
 
@@ -221,11 +227,11 @@ export async function POST(request: NextRequest) {
         const { data: entry, error: insertError } = await supabase
           .from("time_entries")
           .insert({
-            venue_id: VENUE_ID,
+            venue_id: venueId,
             staff_id: staffId,
             clock_in: new Date().toISOString(),
             status: "active",
-            created_by: STAFF_ID,
+            created_by: currentStaff.id,
           })
           .select("id")
           .single();
@@ -248,7 +254,7 @@ export async function POST(request: NextRequest) {
           .from("time_entries")
           .select("id, clock_in")
           .eq("staff_id", staffId)
-          .eq("venue_id", VENUE_ID)
+          .eq("venue_id", venueId)
           .eq("status", "active")
           .single();
 
@@ -290,14 +296,14 @@ export async function POST(request: NextRequest) {
         const { data: entry, error: insertError } = await supabase
           .from("time_entries")
           .insert({
-            venue_id: VENUE_ID,
+            venue_id: venueId,
             staff_id: staffId,
             clock_in: clockIn,
             clock_out: clockOut,
             break_minutes: breakMinutes || 0,
             notes: notes || null,
             status: "completed",
-            created_by: STAFF_ID,
+            created_by: currentStaff.id,
           })
           .select("id")
           .single();

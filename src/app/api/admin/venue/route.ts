@@ -2,20 +2,20 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoMode } from "@/lib/mock/demo-mode";
 import { mockVenue } from "@/lib/mock/data";
+import { getVenueId } from "@/lib/utils/venue";
 
 export const dynamic = "force-dynamic";
-
-const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
 
 /** GET — return full venue record */
 export async function GET() {
   if (isDemoMode()) return NextResponse.json(mockVenue);
   try {
+    const venueId = await getVenueId();
     const supabase = createAdminClient();
     const { data, error } = await supabase
       .from("venues")
       .select("*")
-      .eq("id", VENUE_ID)
+      .eq("id", venueId)
       .single();
 
     if (error) {
@@ -34,6 +34,7 @@ export async function GET() {
 export async function PATCH(request: NextRequest) {
   if (isDemoMode()) return NextResponse.json(mockVenue);
   try {
+    const venueId = await getVenueId();
     const body = await request.json();
     const supabase = createAdminClient();
 
@@ -54,7 +55,7 @@ export async function PATCH(request: NextRequest) {
       const { data: current } = await supabase
         .from("venues")
         .select("settings")
-        .eq("id", VENUE_ID)
+        .eq("id", venueId)
         .single();
       updateData.settings = { ...(current?.settings || {}), ...body.settings };
     }
@@ -64,7 +65,7 @@ export async function PATCH(request: NextRequest) {
       const { data: current } = await supabase
         .from("venues")
         .select("website_content")
-        .eq("id", VENUE_ID)
+        .eq("id", venueId)
         .single();
       updateData.website_content = { ...(current?.website_content || {}), ...body.website_content };
     }
@@ -79,7 +80,7 @@ export async function PATCH(request: NextRequest) {
     const { data, error } = await supabase
       .from("venues")
       .update(updateData)
-      .eq("id", VENUE_ID)
+      .eq("id", venueId)
       .select("*")
       .single();
 

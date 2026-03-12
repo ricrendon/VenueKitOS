@@ -2,20 +2,20 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoMode } from "@/lib/mock/demo-mode";
 import { mockWaivers } from "@/lib/mock/data";
+import { getVenueId } from "@/lib/utils/venue";
 
 export const dynamic = "force-dynamic";
-
-const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
 
 export async function GET() {
   if (isDemoMode()) return NextResponse.json(mockWaivers);
   try {
+    const venueId = await getVenueId();
     const supabase = createAdminClient();
 
     const { data, error } = await supabase
       .from("waivers")
       .select("*, parent:parent_accounts(first_name, last_name, email)")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .order("signed_at", { ascending: false });
 
     if (error) {

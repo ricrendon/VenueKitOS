@@ -2,21 +2,21 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoMode } from "@/lib/mock/demo-mode";
 import { mockMemberships } from "@/lib/mock/data";
+import { getVenueId } from "@/lib/utils/venue";
 
 export const dynamic = "force-dynamic";
-
-const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
 
 export async function GET() {
   if (isDemoMode()) return NextResponse.json(mockMemberships);
   try {
+    const venueId = await getVenueId();
     const supabase = createAdminClient();
 
     // Get membership plans
     const { data: plans } = await supabase
       .from("membership_plans")
       .select("id, name, description, monthly_price, annual_price, max_children, includes_open_play, party_discount, guest_passes, features")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .order("monthly_price");
 
     // Get active memberships with parent info

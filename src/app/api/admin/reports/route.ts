@@ -3,11 +3,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getLocalToday } from "@/lib/utils/timezone";
 import { isDemoMode } from "@/lib/mock/demo-mode";
 import { mockReports } from "@/lib/mock/data";
+import { getVenueId, getVenueTz } from "@/lib/utils/venue";
 
 export const dynamic = "force-dynamic";
-
-const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
-const VENUE_TZ = "America/Chicago";
 
 type Period = "7d" | "30d" | "90d" | "12m";
 type Tab = "overview" | "revenue" | "occupancy" | "customers";
@@ -21,8 +19,8 @@ function getPeriodDays(period: Period): number {
   }
 }
 
-function getDateRange(period: Period): { start: string; end: string; prevStart: string; prevEnd: string } {
-  const today = getLocalToday(VENUE_TZ);
+function getDateRange(period: Period, tz: string): { start: string; end: string; prevStart: string; prevEnd: string } {
+  const today = getLocalToday(tz);
   const days = getPeriodDays(period);
 
   const endDate = new Date(today + "T23:59:59");
@@ -51,7 +49,7 @@ function changePercent(current: number, previous: number): number {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-async function getOverviewData(supabase: any, range: ReturnType<typeof getDateRange>) {
+async function getOverviewData(supabase: any, range: ReturnType<typeof getDateRange>, venueId: string) {
   const { start, end, prevStart, prevEnd } = range;
 
   const [
@@ -69,7 +67,7 @@ async function getOverviewData(supabase: any, range: ReturnType<typeof getDateRa
     supabase
       .from("bookings")
       .select("date, total, type, child_count, adult_count, status, payment_status")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .gte("date", start)
       .lte("date", end)
       .in("status", ["confirmed", "completed"]),
@@ -77,7 +75,7 @@ async function getOverviewData(supabase: any, range: ReturnType<typeof getDateRa
     supabase
       .from("bookings")
       .select("date, total, child_count, adult_count, status, payment_status")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .gte("date", prevStart)
       .lte("date", prevEnd)
       .in("status", ["confirmed", "completed"]),
@@ -85,7 +83,7 @@ async function getOverviewData(supabase: any, range: ReturnType<typeof getDateRa
     supabase
       .from("orders")
       .select("total, created_at, status")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .gte("created_at", start + "T00:00:00")
       .lte("created_at", end + "T23:59:59")
       .eq("status", "completed"),
@@ -93,7 +91,7 @@ async function getOverviewData(supabase: any, range: ReturnType<typeof getDateRa
     supabase
       .from("orders")
       .select("total, status")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .gte("created_at", prevStart + "T00:00:00")
       .lte("created_at", prevEnd + "T23:59:59")
       .eq("status", "completed"),
@@ -101,7 +99,7 @@ async function getOverviewData(supabase: any, range: ReturnType<typeof getDateRa
     supabase
       .from("party_reservations")
       .select("date, total_due, status")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .gte("date", start)
       .lte("date", end)
       .in("status", ["confirmed", "completed"]),
@@ -109,7 +107,7 @@ async function getOverviewData(supabase: any, range: ReturnType<typeof getDateRa
     supabase
       .from("party_reservations")
       .select("total_due, status")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .gte("date", prevStart)
       .lte("date", prevEnd)
       .in("status", ["confirmed", "completed"]),
@@ -117,20 +115,20 @@ async function getOverviewData(supabase: any, range: ReturnType<typeof getDateRa
     supabase
       .from("memberships")
       .select("id, plan_id, status, membership_plans(monthly_price)")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .eq("status", "active"),
     // Current check-ins
     supabase
       .from("check_ins")
       .select("checked_in_at, child_count")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .gte("checked_in_at", start + "T00:00:00")
       .lte("checked_in_at", end + "T23:59:59"),
     // Previous check-ins
     supabase
       .from("check_ins")
       .select("child_count")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .gte("checked_in_at", prevStart + "T00:00:00")
       .lte("checked_in_at", prevEnd + "T23:59:59"),
   ]);
@@ -226,7 +224,7 @@ async function getOverviewData(supabase: any, range: ReturnType<typeof getDateRa
   };
 }
 
-async function getRevenueData(supabase: any, range: ReturnType<typeof getDateRange>) {
+async function getRevenueData(supabase: any, range: ReturnType<typeof getDateRange>, venueId: string) {
   const { start, end, prevStart, prevEnd } = range;
 
   const [bookingsRes, prevBookingsRes, ordersRes, prevOrdersRes, partyRes, prevPartyRes] =
@@ -234,42 +232,42 @@ async function getRevenueData(supabase: any, range: ReturnType<typeof getDateRan
       supabase
         .from("bookings")
         .select("date, total, type, payment_status")
-        .eq("venue_id", VENUE_ID)
+        .eq("venue_id", venueId)
         .gte("date", start)
         .lte("date", end)
         .in("status", ["confirmed", "completed"]),
       supabase
         .from("bookings")
         .select("total, type, payment_status")
-        .eq("venue_id", VENUE_ID)
+        .eq("venue_id", venueId)
         .gte("date", prevStart)
         .lte("date", prevEnd)
         .in("status", ["confirmed", "completed"]),
       supabase
         .from("orders")
         .select("total, created_at")
-        .eq("venue_id", VENUE_ID)
+        .eq("venue_id", venueId)
         .gte("created_at", start + "T00:00:00")
         .lte("created_at", end + "T23:59:59")
         .eq("status", "completed"),
       supabase
         .from("orders")
         .select("total")
-        .eq("venue_id", VENUE_ID)
+        .eq("venue_id", venueId)
         .gte("created_at", prevStart + "T00:00:00")
         .lte("created_at", prevEnd + "T23:59:59")
         .eq("status", "completed"),
       supabase
         .from("party_reservations")
         .select("date, total_due")
-        .eq("venue_id", VENUE_ID)
+        .eq("venue_id", venueId)
         .gte("date", start)
         .lte("date", end)
         .in("status", ["confirmed", "completed"]),
       supabase
         .from("party_reservations")
         .select("total_due")
-        .eq("venue_id", VENUE_ID)
+        .eq("venue_id", venueId)
         .gte("date", prevStart)
         .lte("date", prevEnd)
         .in("status", ["confirmed", "completed"]),
@@ -368,21 +366,21 @@ async function getRevenueData(supabase: any, range: ReturnType<typeof getDateRan
   };
 }
 
-async function getOccupancyData(supabase: any, range: ReturnType<typeof getDateRange>) {
+async function getOccupancyData(supabase: any, range: ReturnType<typeof getDateRange>, venueId: string) {
   const { start, end } = range;
 
   const [bookingsRes, venueRes] = await Promise.all([
     supabase
       .from("bookings")
       .select("date, start_time, child_count, adult_count")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .gte("date", start)
       .lte("date", end)
       .in("status", ["confirmed", "completed"]),
     supabase
       .from("venues")
       .select("settings")
-      .eq("id", VENUE_ID)
+      .eq("id", venueId)
       .single(),
   ]);
 
@@ -458,31 +456,31 @@ async function getOccupancyData(supabase: any, range: ReturnType<typeof getDateR
   return { heatmap: heatmapData, fillRate, capacityTrend, busiestDays };
 }
 
-async function getCustomersData(supabase: any, range: ReturnType<typeof getDateRange>) {
+async function getCustomersData(supabase: any, range: ReturnType<typeof getDateRange>, venueId: string) {
   const { start, end } = range;
 
   const [bookingsRes, membershipsRes, plansRes, allBookingsRes] = await Promise.all([
     supabase
       .from("bookings")
       .select("date, parent_id, child_count, adult_count")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .gte("date", start)
       .lte("date", end)
       .in("status", ["confirmed", "completed"]),
     supabase
       .from("memberships")
       .select("id, plan_id, status, start_date")
-      .eq("venue_id", VENUE_ID),
+      .eq("venue_id", venueId),
     supabase
       .from("membership_plans")
       .select("id, name, monthly_price")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .eq("active", true),
     // All-time bookings to determine first visit
     supabase
       .from("bookings")
       .select("parent_id, date")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .in("status", ["confirmed", "completed"])
       .order("date", { ascending: true }),
   ]);
@@ -570,29 +568,33 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(mockReports(searchParams.get("tab") || "overview", searchParams.get("period") || "30d"));
   }
   try {
+    const venueId = await getVenueId();
+    const venueTz = await getVenueTz();
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const tab = (searchParams.get("tab") || "overview") as Tab;
-    const period = (searchParams.get("period") || "30d") as Period;
+    const validPeriods: Period[] = ["7d", "30d", "90d", "12m"];
+    const rawPeriod = searchParams.get("period") || "30d";
+    const period: Period = validPeriods.includes(rawPeriod as Period) ? (rawPeriod as Period) : "30d";
 
-    const range = getDateRange(period);
+    const range = getDateRange(period, venueTz);
 
     let data;
     switch (tab) {
       case "overview":
-        data = await getOverviewData(supabase, range);
+        data = await getOverviewData(supabase, range, venueId);
         break;
       case "revenue":
-        data = await getRevenueData(supabase, range);
+        data = await getRevenueData(supabase, range, venueId);
         break;
       case "occupancy":
-        data = await getOccupancyData(supabase, range);
+        data = await getOccupancyData(supabase, range, venueId);
         break;
       case "customers":
-        data = await getCustomersData(supabase, range);
+        data = await getCustomersData(supabase, range, venueId);
         break;
       default:
-        data = await getOverviewData(supabase, range);
+        data = await getOverviewData(supabase, range, venueId);
     }
 
     return NextResponse.json(data);

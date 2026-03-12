@@ -54,7 +54,7 @@ export default function LoginPage() {
         const { redirect } = await roleRes.json();
         // Hard redirect ensures the browser sends fresh auth cookies.
         // Never send an authenticated user to "/" (marketing homepage).
-        const dest = redirect && redirect !== "/" ? redirect : "/portal/dashboard";
+        const dest = redirect && redirect !== "/" ? redirect : "/admin/dashboard";
         window.location.href = dest;
         return;
       }
@@ -63,7 +63,7 @@ export default function LoginPage() {
     }
 
     // Fallback — hard redirect to ensure cookies are sent
-    window.location.href = "/portal/dashboard";
+    window.location.href = "/admin/dashboard";
   };
 
   return (
@@ -82,7 +82,7 @@ export default function LoginPage() {
         <div className="rounded-lg border border-cream-300 bg-cream-50 p-8 shadow-card">
           <h1 className="font-display text-h2 text-ink text-center">Welcome back</h1>
           <p className="mt-2 text-body-m text-ink-secondary text-center">
-            Sign in to manage your venue or family account.
+            Sign in to manage your venue.
           </p>
 
           {error && (

@@ -4,11 +4,9 @@ import { getLocalToday, formatStoredTime } from "@/lib/utils/timezone";
 import { subDays, format } from "date-fns";
 import { isDemoMode } from "@/lib/mock/demo-mode";
 import { mockDashboard } from "@/lib/mock/data";
+import { getVenueId, getVenueTz } from "@/lib/utils/venue";
 
 export const dynamic = "force-dynamic";
-
-const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
-const VENUE_TZ = "America/Chicago";
 
 /** Return an ISO date string N days before `today`. */
 function daysAgo(today: string, n: number): string {
@@ -27,8 +25,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(mockDashboard(period));
   }
   try {
+    const venueId = await getVenueId();
+    const venueTz = await getVenueTz();
     const supabase = createAdminClient();
-    const today = getLocalToday(VENUE_TZ);
+    const today = getLocalToday(venueTz);
 
     // Period for trend charts (default 30 days)
     const { searchParams } = new URL(request.url);
@@ -56,40 +56,40 @@ export async function GET(request: NextRequest) {
       supabase
         .from("bookings")
         .select("*, parent:parent_accounts(first_name, last_name)")
-        .eq("venue_id", VENUE_ID)
+        .eq("venue_id", venueId)
         .eq("date", today)
         .order("start_time", { ascending: true }),
 
       supabase
         .from("party_reservations")
         .select("*, parent:parent_accounts(first_name, last_name), package:party_packages(name)")
-        .eq("venue_id", VENUE_ID)
+        .eq("venue_id", venueId)
         .eq("date", today)
         .order("start_time", { ascending: true }),
 
       supabase
         .from("check_ins")
         .select("*")
-        .eq("venue_id", VENUE_ID)
+        .eq("venue_id", venueId)
         .gte("checked_in_at", `${today}T00:00:00`)
         .lte("checked_in_at", `${today}T23:59:59`),
 
       supabase
         .from("memberships")
         .select("id", { count: "exact", head: true })
-        .eq("venue_id", VENUE_ID)
+        .eq("venue_id", venueId)
         .eq("status", "active"),
 
       supabase
         .from("waivers")
         .select("id", { count: "exact", head: true })
-        .eq("venue_id", VENUE_ID)
+        .eq("venue_id", venueId)
         .eq("status", "signed"),
 
       supabase
         .from("bookings")
         .select("total")
-        .eq("venue_id", VENUE_ID)
+        .eq("venue_id", venueId)
         .eq("date", today)
         .eq("payment_status", "paid"),
 
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
       supabase
         .from("bookings")
         .select("date, total, type")
-        .eq("venue_id", VENUE_ID)
+        .eq("venue_id", venueId)
         .gte("date", trendStart)
         .lte("date", today)
         .eq("payment_status", "paid"),
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
       supabase
         .from("party_reservations")
         .select("date, total")
-        .eq("venue_id", VENUE_ID)
+        .eq("venue_id", venueId)
         .gte("date", trendStart)
         .lte("date", today),
 
@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
       supabase
         .from("bookings")
         .select("date, child_count, adult_count")
-        .eq("venue_id", VENUE_ID)
+        .eq("venue_id", venueId)
         .gte("date", daysAgo(today, 13))
         .lte("date", today),
 
@@ -122,14 +122,14 @@ export async function GET(request: NextRequest) {
       supabase
         .from("bookings")
         .select("child_count, adult_count")
-        .eq("venue_id", VENUE_ID)
+        .eq("venue_id", venueId)
         .eq("date", yesterday),
 
       // ── COMPARISON: yesterday's revenue ───────────────────────────
       supabase
         .from("bookings")
         .select("total")
-        .eq("venue_id", VENUE_ID)
+        .eq("venue_id", venueId)
         .eq("date", yesterday)
         .eq("payment_status", "paid"),
     ]);
@@ -233,7 +233,7 @@ export async function GET(request: NextRequest) {
     const { count: pastDue } = await supabase
       .from("memberships")
       .select("id", { count: "exact", head: true })
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .eq("status", "past_due");
 
     if (pastDue && pastDue > 0) {

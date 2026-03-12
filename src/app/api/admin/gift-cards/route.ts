@@ -2,10 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoMode } from "@/lib/mock/demo-mode";
 import { mockGiftCards } from "@/lib/mock/data";
+import { getVenueId } from "@/lib/utils/venue";
 
 export const dynamic = "force-dynamic";
-
-const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
 
 function generateGiftCardCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -20,6 +19,7 @@ function generateGiftCardCode(): string {
 export async function GET(request: NextRequest) {
   if (isDemoMode()) return NextResponse.json(mockGiftCards);
   try {
+    const venueId = await getVenueId();
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const search = searchParams.get("search");
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from("gift_cards")
       .select("*")
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .order("created_at", { ascending: false });
 
     if (status) {
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     const { data: allCards } = await supabase
       .from("gift_cards")
       .select("id, status, current_balance, initial_value")
-      .eq("venue_id", VENUE_ID);
+      .eq("venue_id", venueId);
 
     const cards = allCards || [];
     const activeCards = cards.filter((c) => c.status === "active");
@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid gift card amount" }, { status: 400 });
     }
 
+    const venueId = await getVenueId();
     const supabase = createAdminClient();
 
     // Generate unique code with retry
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
     const { data: giftCard, error: insertError } = await supabase
       .from("gift_cards")
       .insert({
-        venue_id: VENUE_ID,
+        venue_id: venueId,
         code,
         initial_value: initialValue,
         current_balance: initialValue,

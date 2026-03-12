@@ -47,10 +47,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // No role found — still send to portal rather than marketing homepage
+    // No role found — send to operator portal rather than marketing homepage
     return NextResponse.json({
       role: null,
-      redirect: "/portal/dashboard",
+      redirect: "/admin/dashboard",
     });
   } catch (err) {
     console.error("Resolve role error:", err);

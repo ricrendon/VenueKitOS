@@ -2,10 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoMode } from "@/lib/mock/demo-mode";
 import { mockStaff } from "@/lib/mock/data";
+import { getVenueId } from "@/lib/utils/venue";
 
 export const dynamic = "force-dynamic";
-
-const VENUE_ID = "a1b2c3d4-0001-4000-8000-000000000001";
 
 const VALID_ROLES = [
   "super_admin",
@@ -19,6 +18,7 @@ const VALID_ROLES = [
 export async function GET(request: NextRequest) {
   if (isDemoMode()) return NextResponse.json(mockStaff);
   try {
+    const venueId = await getVenueId();
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const statusFilter = searchParams.get("status");
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       .select(
         "id, auth_user_id, first_name, last_name, role, email, phone, active, created_at"
       )
-      .eq("venue_id", VENUE_ID)
+      .eq("venue_id", venueId)
       .order("first_name");
 
     if (statusFilter === "active") {
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     const { data: allStaff } = await supabase
       .from("staff_users")
       .select("active, role")
-      .eq("venue_id", VENUE_ID);
+      .eq("venue_id", venueId);
 
     const all = allStaff || [];
     const activeCount = all.filter((s) => s.active).length;
@@ -98,6 +98,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
     }
 
+    const venueId = await getVenueId();
     const supabase = createAdminClient();
 
     // Generate temporary password
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
       .from("staff_users")
       .insert({
         auth_user_id: authData.user.id,
-        venue_id: VENUE_ID,
+        venue_id: venueId,
         role,
         first_name,
         last_name,
