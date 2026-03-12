@@ -26,8 +26,8 @@ export async function getVenueId(): Promise<string> {
       .single();
 
     if (data) {
-      _venueId = data.id;
-      _venueTz = data.timezone || FALLBACK_TZ;
+      _venueId = data.id as string;
+      _venueTz = (data.timezone as string) || FALLBACK_TZ;
       return _venueId;
     }
   } catch {

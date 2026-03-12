@@ -63,6 +63,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   if (isDemoMode()) return NextResponse.json({ success: true, item: { id: "demo-menu-new" } });
   try {
+    const venueId = await getVenueId();
     const body = await request.json();
     const {
       name,
