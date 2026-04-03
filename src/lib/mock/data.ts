@@ -134,6 +134,7 @@ export const mockPermissions = {
     "dashboard", "reservations", "check-in", "families", "memberships",
     "staff", "reports", "venue", "waivers", "gift-cards",
     "incidents", "inventory", "menu", "social", "time-clock",
+    "pos", "passes", "feedback", "parties",
   ],
 };
 
