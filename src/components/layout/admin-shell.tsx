@@ -24,7 +24,7 @@ const sidebarNav = [
   { href: "/admin/passes", label: "Member Passes", icon: QrCode },
   { href: "/admin/check-in", label: "Check-In", icon: ClipboardCheck },
   { href: "/admin/time-clock", label: "Time Clock", icon: Timer },
-  { href: "/admin/pos", label: "POS", icon: ShoppingCart },
+  { href: "/admin/pos", label: "FoodHub", icon: ShoppingCart },
   { href: "/admin/inventory", label: "Inventory", icon: Package },
   { href: "/admin/gift-cards", label: "Gift Cards", icon: Gift },
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },

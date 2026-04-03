@@ -257,7 +257,9 @@ export default function POSManagementPage() {
             />
           </div>
           <Link
-            href="/admin/pos/kiosk"
+            href="/kiosk"
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center gap-2 px-4 py-2 bg-terracotta text-white text-body-s font-medium rounded-sm hover:bg-terracotta/90 transition-colors"
           >
             <ShoppingCart className="h-4 w-4" />
